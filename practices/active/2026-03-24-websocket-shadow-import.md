@@ -11,7 +11,7 @@ project: cotiza-api-cloud
 status: active
 tested_in: [cotiza-api-cloud]
 incorporated_in: [stacks/python-fastapi/rules/backend.md]
-effectiveness: monitoring
+effectiveness: validated
 error_type: config
 ---
 

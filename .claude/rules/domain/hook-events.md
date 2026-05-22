@@ -50,6 +50,21 @@ last_verified: 2026-05-13
 - `cwd` — absolute working directory
 - `transcript_path` — path to the session transcript jsonl
 
+## Hook JSON output fields (universal)
+
+Standard output fields all hooks may return:
+- `continue: bool` — false aborts the current turn
+- `stopReason: string` — surfaced in the UI when continue=false
+- `suppressOutput: bool` — hide stdout from the model
+- `systemMessage: string` — inject a system-style message into context
+- `terminalSequence: string` (v2.1.141+) — emit raw escape sequences for desktop notifications (OSC 9 on iTerm2/macOS), window titles (`\033]0;<title>\007`), or terminal bell (`\a`). Works without a controlling TTY, so hooks can signal the user during background sessions. Example: `{"terminalSequence":"]0;Build green"}`
+
+## Stop hook contract (v2.1.143+)
+
+- Stop hooks that return `decision: "block"` repeatedly were able to loop forever (block → retry → block). A cap was added: **8 consecutive blocks** terminate the turn with a warning
+- Override the cap via `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP=<n>` env var
+- Implication: blocks **must converge**. A Stop hook that gates on a flaky test should count attempts and let the turn pass after N retries instead of looping. Treat `decision: "block"` as a signal for "more work needed", not "force always"
+
 ## MCP elicitation events (v2.1.76+)
 
 - Elicitation: fires when an MCP server requests structured user input mid-tool-call. Hook can return `action: "accept" | "decline" | "cancel"` and override field values via `content: {field: "new_value"}`

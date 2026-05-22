@@ -51,7 +51,10 @@ Reference for non-paralellism CLI surface. For session-parallelism flags see `pa
 
 - `claude install [version|stable|latest]`: install/reinstall the native binary at a specific version
 - `claude auth (login|logout|status)`: account auth; `--email`, `--sso`, `--console` modifiers; `auth status --text` for human-readable
-- `claude agents`: opens agent view (v2.1.139+); when piped, lists configured subagents grouped by source
+- `claude agents`: opens agent view (v2.1.139+); when piped, lists configured subagents grouped by source. Accepts launcher flags for dispatched background sessions (v2.1.141-143):
+  - `--cwd <path>` (v2.1.141) — scope the agent list / dispatch to a directory
+  - `--add-dir`, `--settings`, `--mcp-config`, `--plugin-dir`, `--permission-mode`, `--model`, `--effort`, `--dangerously-skip-permissions` (v2.1.142) — same surface as interactive `claude`, applies to sessions dispatched FROM the view (not those already running)
+  - v2.1.143: `/bg` and ←-detach preserve `--mcp-config`, `--settings`, `--add-dir`, `--plugin-dir`, `--strict-mcp-config`, `--fallback-model`, `--allow-dangerously-skip-permissions` when backgrounding interactive sessions. Bg sessions dispatched from `claude agents` now honor `permissions.defaultMode` from settings.json (previously overrode to auto)
 - `claude attach <id>` / `logs <id>` / `respawn <id>` / `rm <id>` / `stop <id>`: background session lifecycle (v2.1.139+)
 - `claude auto-mode (defaults|config)`: print built-in classifier rules / effective config as JSON
 - `claude remote-control`: server mode (no local interactive session) — pair from claude.ai
@@ -67,3 +70,5 @@ Reference for non-paralellism CLI surface. For session-parallelism flags see `pa
 - `CLAUDE_CODE_ENABLE_FEEDBACK_SURVEY_FOR_OTEL` (v2.1.136+): re-enable session quality survey for enterprises capturing responses via OpenTelemetry
 - `CLAUDE_CODE_SESSION_ID` (v2.1.132+): exported to Bash tool subprocesses, matches the `session_id` passed to hooks
 - `$CLAUDE_EFFORT` (v2.1.133+): active effort level exported to Bash tool subprocesses; hook inputs see the same value under `effort.level`. See `hook-events.md`
+- `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE=1` (v2.1.142+): pin fast mode (`/fast`) to Opus 4.6. Default flipped to Opus 4.7 in v2.1.142 — use only if you need pre-flip output reproducibility (benchmarks, regression tests)
+- `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP=<n>` (v2.1.143+): override the 8-consecutive-block cap on Stop hooks. See `hook-events.md` Stop hook contract

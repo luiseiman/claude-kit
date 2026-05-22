@@ -4,6 +4,54 @@
 >
 > Historial de versiones. Las entradas usan español/inglés mixto según la evolución del proyecto. Los términos técnicos son universales.
 
+## v3.9.0 — 2026-05-22
+
+### Sync from Claude Code v2.1.141-143
+
+Procesados 13 items del inbox (acumulado 2026-05-18 a 2026-05-19). 8 incorporados a domain rules + skill + best-practices. 3 rechazados (1 informational sin acción, 2 auto-stubs de session-changes sin proyecto identificable). 2 diferidos (`powershell-execution-policy` con tag `needs-windows-user`; `workspace-id-federation` con tag `needs-enterprise-federation`).
+
+#### Domain rules
+
+- **`domain/hook-events.md`** — nueva sección "Hook JSON output fields (universal)" con `continue`, `stopReason`, `suppressOutput`, `systemMessage`, y el nuevo `terminalSequence` (v2.1.141+) para desktop notifications / window titles / terminal bell desde hooks sin TTY. Nueva sección "Stop hook contract (v2.1.143+)" con el cap de 8 bloqueos consecutivos y `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP`.
+- **`domain/hook-architecture.md`** — sección "Stop hook convergence contract (v2.1.143+)": cap de 8 blocks, patrones de convergencia (contadores en `.claude/session/`, `systemMessage` en vez de `block`).
+- **`domain/model-ids.md`** — nueva sección "Fast mode (Opus toggle)" con default flippeado a Opus 4.7 (v2.1.142) y `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE=1` para pin a 4.6.
+- **`domain/cli-flags.md`** — `claude agents` ahora documentado como launcher con los 9 flags (`--cwd`, `--add-dir`, `--settings`, `--mcp-config`, `--plugin-dir`, `--permission-mode`, `--model`, `--effort`, `--dangerously-skip-permissions`). Nuevas env vars: `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE`, `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP`.
+- **`domain/parallel-sessions.md`** — nueva sección "Disabling bg session worktree isolation" con `worktree.bgIsolation: "auto"|"none"` y los trade-offs (Bazel/codegen vs concurrent-clobber risk). Nueva sección "Configuring sessions dispatched from claude agents" documenta los flags-as-launcher y la persistencia en detach a `/bg` (v2.1.143).
+- **`domain/compaction-strategy.md`** — tabla extendida con cuarta modalidad: **rewind + "Summarize up to here"** (v2.1.141), sexta opción del rewind menu. Comprime desde session start hasta un checkpoint elegido, deja turnos posteriores intactos.
+
+#### Skills
+
+- **`skills/plugin-generator/SKILL.md`** — documenta dos shapes:
+  - **Flat** (single-skill, v2.1.142+): `SKILL.md` en root sin `skills/` directory
+  - **Structured** (default): cuando hay ≥2 skills u otros componentes
+  - Plus: `plugin.json` ahora incluye `dependencies: []` con guía sobre el enforcement de v2.1.143 (`claude plugin disable` rechaza si otros plugins dependen; `enable` force-enables transitive deps).
+
+#### Docs
+
+- **`docs/best-practices.md`** — nueva subsección "Recent additions (v2.1.141-143)" con 6 entries: Stop hook anti-pattern, plugin disable-chain, hook terminalSequence, worktree.bgIsolation, claude agents launcher, rewind+summarize partial.
+
+#### Inbox lifecycle
+
+| Item | Decisión |
+|---|---|
+| `claude-agents-cli-flags` | accept → `incorporated_in: ['3.9.0']` |
+| `fast-mode-opus-4-7-default` | accept (informational) |
+| `hook-terminal-sequence` | accept (informational) |
+| `plugin-dependency-enforcement` | accept (monitoring: integration) |
+| `plugin-root-skill-md` | accept (informational) |
+| `rewind-summarize-partial` | accept (informational) |
+| `stop-hook-block-cap` | accept (monitoring: logic) |
+| `worktree-bgisolation-none` | accept (monitoring: config) |
+| `plugin-lsp-visibility` | reject — informational, no requiere cambio (self-deferred) |
+| `stoic-babbage-session-changes` | reject — auto-stub sin proyecto identificable |
+| `festive-maxwell-session-changes` | reject — idem |
+| `powershell-execution-policy` | defer — tag `needs-windows-user` |
+| `workspace-id-federation` | defer — tag `needs-enterprise-federation` |
+
+#### Metrics
+
+8 entradas nuevas en `practices/metrics.yml`: 3 monitoring (logic/config/integration con error_targeted), 5 informational.
+
 ## v3.8.1 — 2026-05-18
 
 Maintenance: docs domain migration.

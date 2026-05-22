@@ -19,7 +19,7 @@ Compactá manualmente al **80%** del context window, no antes ni después:
 
 Para 1M context (Sonnet 4.6) → 800K tokens. Para 200K (Haiku) → 160K.
 
-## /compact vs /clear vs subagent
+## /compact vs /clear vs subagent vs rewind+summarize
 
 | Situación | Acción |
 |---|---|
@@ -27,6 +27,9 @@ Para 1M context (Sonnet 4.6) → 800K tokens. Para 200K (Haiku) → 160K.
 | Tarea totalmente nueva, sin relación | `/clear` (reset total) |
 | Tarea >10min con cambio de contexto | Subagent fresco (NO compact) |
 | Cambio de proyecto | Nueva sesión, no compact |
+| Fase actual aún activa + historial previo descartable (post-pivot) | Esc-Esc → "Summarize up to here" (v2.1.141+) |
+
+**Rewind + "Summarize up to here"** (v2.1.141+) — sexta opción del rewind menu. Comprime el contexto desde el inicio hasta un checkpoint elegido, dejando los turnos posteriores intactos. Distinto a `/compact` (que comprime todo) y a `/clear` (que borra). Usalo cuando los primeros N turnos resolvieron una fase ya cerrada (exploración inicial, pivot, decisión arquitectónica adoptada) y querés preservar los últimos turnos con su detalle completo.
 
 ## Anti-patterns confirmados por practitioners
 

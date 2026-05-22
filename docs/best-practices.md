@@ -232,6 +232,15 @@ CONTEXT → PLANNING → EXECUTION → VALIDATION → REFINEMENT → DOCUMENTATI
 - **`workspace` reserved as MCP server name (v2.1.128)**: don't name your MCP server `workspace`; Claude Code skips it with a warning.
 - **`claude install [version|stable|latest]`**: pin a specific Claude Code version for reproducible CI builds.
 
+### Recent additions (v2.1.141-143)
+
+- **Stop hook anti-pattern — infinite block (v2.1.143 cap)**: a Stop hook that returns `decision: "block"` repeatedly used to loop indefinitely. Since v2.1.143, **8 consecutive blocks** terminate the turn with a warning. Override via `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP=<n>`. Design implication: blocks **must converge** — count attempts and let the turn pass after N retries instead of looping. Treat `block` as "more work needed", not "force always".
+- **Plugin disable-chain (v2.1.143)**: `claude plugin disable <name>` refuses to disable a plugin that others depend on, showing a copy-pasteable disable-chain. `claude plugin enable <name>` force-enables transitive dependencies. **Declare `dependencies` in `plugin.json`** if your plugin imports skills/agents/hooks from another plugin — otherwise users may install a broken plugin that silently misses runtime components.
+- **Hook `terminalSequence` output (v2.1.141)**: hooks can emit escape sequences for desktop notifications (OSC 9), window titles (`\033]0;<title>\007`), or terminal bell (`\a`) without controlling-TTY access. Useful pattern: notify-on-stop in background sessions.
+- **`worktree.bgIsolation: "none"` (v2.1.143)**: opt-out from auto-worktree for `--bg` sessions. Use only when worktrees are impractical (Bazel, deep `.gitmodules`, codegen-to-root build systems). **Risk**: concurrent bg sessions can clobber each other — serialize them.
+- **`claude agents` as launcher (v2.1.141-143)**: `--cwd`, `--add-dir`, `--settings`, `--mcp-config`, `--plugin-dir`, `--permission-mode`, `--model`, `--effort`, `--dangerously-skip-permissions` configure sessions dispatched from the agent view. Detaching to `/bg` now preserves these. Bg sessions honor `permissions.defaultMode` from settings.json (no more silent auto override).
+- **Rewind + "Summarize up to here" (v2.1.141)**: sixth option in the rewind menu (Esc-Esc / `/rewind`). Compresses context from session start to a chosen checkpoint, leaving later turns intact. Use when an early phase resolved (exploration, pivot, architectural decision) and you want full detail on recent work only.
+
 ---
 
 ## 5. Effective prompting

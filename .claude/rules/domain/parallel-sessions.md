@@ -41,6 +41,26 @@ Pick by isolation needed:
 - **Fork session** (`--fork-session`): clone history, separate session ID, same working tree. Best for "what-if" exploration
 - **Background** (`--bg`): same working tree, separate context, runs without blocking your shell. Best for long unattended tasks (overnight refactor, batch lint, scheduled audit)
 
+## Disabling bg session worktree isolation (v2.1.143+)
+
+`worktree.bgIsolation` setting in `settings.json`:
+
+- `"auto"` (default): every `--bg` session opens in its own worktree via `EnterWorktree`. Two bg sessions never see each other's in-flight edits
+- `"none"`: bg sessions edit the working copy directly. Skip `EnterWorktree` entirely
+
+Set `"none"` only when worktrees are impractical: Bazel monorepos that assume a single root, repos with deep `.gitmodules` chains, build systems that write to the repo root (asset pipelines, codegen). **Risk**: two concurrent bg sessions can clobber each other — there's no automatic isolation. Serialize bg work or use `--worktree` explicitly for the cases that can.
+
+## Configuring sessions dispatched from `claude agents` (v2.1.141-143)
+
+`claude agents` is no longer just a dashboard — it's a launcher. Flags applied at the CLI become defaults for sessions dispatched from the view:
+
+- `--cwd <path>` (v2.1.141) scope to a directory
+- `--add-dir`, `--settings`, `--mcp-config`, `--plugin-dir` (v2.1.142) — same surface as interactive `claude`
+- `--permission-mode`, `--model`, `--effort`, `--dangerously-skip-permissions` (v2.1.142)
+- v2.1.143: detaching to `/bg` preserves the launcher flags. Dispatched bg sessions now honor `permissions.defaultMode` from settings.json (previous versions overrode to `auto`)
+
+For exhaustive flag reference see `cli-flags.md`.
+
 ## Session handoff
 
 - `--fork-session`: resume with a new session ID instead of reusing the original. Use with `--resume` or `-c` to clone a session's history without touching the original

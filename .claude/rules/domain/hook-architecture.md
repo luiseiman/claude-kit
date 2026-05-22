@@ -71,6 +71,16 @@ Every hook event's stdin JSON now includes `effort.level` (`"low" | "medium" | "
 - Tool hooks: 10min timeout. SessionEnd: 1.5s default. Override: `hook.timeout`
 - Matchers: Bash, Read, Write, Edit, Grep, Glob. Wildcard `*` supported
 
+## Stop hook convergence contract (v2.1.143+)
+
+Stop hooks that return `decision: "block"` repeatedly used to loop forever. Cap added: **8 consecutive blocks** terminate the turn with a warning. Override via `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP=<n>`.
+
+Design implication: a Stop hook gating on a flaky check (failing test, missing file, pending review) MUST converge. Patterns:
+
+- Count attempts in a state file under `.claude/session/` and let the turn pass after N retries
+- Emit `decision: "block"` only when the gate is concretely actionable; otherwise `continue: true` with a `systemMessage`
+- Never use `decision: "block"` as "force the model to retry indefinitely" — that's the anti-pattern v2.1.143 closes
+
 ## Key hooks
 
 - block-destructive.sh: mandatory; profiles: minimal, standard, strict

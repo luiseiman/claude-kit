@@ -41,7 +41,20 @@ Show the scan results and ask for confirmation before generating.
 
 ## Step 3: Generate plugin structure
 
-Create the output directory with this structure:
+Two shapes — pick by component count:
+
+**Flat (single-skill plugin, v2.1.142+)** — when the plugin exposes ONE skill and no other components, put `SKILL.md` at the root. Claude Code surfaces it automatically since v2.1.142. Less boilerplate, no `skills/` directory needed.
+
+```
+{output-dir}/
+├── .claude-plugin/
+│   └── plugin.json
+├── SKILL.md                  (root-level, single skill)
+├── README.md
+└── LICENSE
+```
+
+**Structured (default, multi-component plugin)** — when the plugin ships ≥2 skills, or any combination of hooks, agents, commands:
 
 ```
 {output-dir}/
@@ -62,6 +75,8 @@ Create the output directory with this structure:
 └── LICENSE                   (copy from project root if exists)
 ```
 
+Default to **structured** unless the source project has exactly 1 rule, 0 hooks, 0 agents, 0 commands.
+
 ### 3a. Generate plugin.json
 
 ```json
@@ -74,9 +89,14 @@ Create the output directory with this structure:
   },
   "repository": "{git remote origin url or ''}",
   "license": "{detected license or 'MIT'}",
-  "keywords": ["claude-code", "{stack1}", "{stack2}", "dotforge"]
+  "keywords": ["claude-code", "{stack1}", "{stack2}", "dotforge"],
+  "dependencies": []
 }
 ```
+
+**Dependencies (v2.1.143+)**: if the generated plugin imports skills, agents, hooks, or commands from another plugin, declare it in `dependencies`. Since v2.1.143, `claude plugin disable <name>` refuses to disable a plugin that others depend on (shows the disable-chain). `claude plugin enable <name>` force-enables transitive deps. Failing to declare dependencies means users may install a broken plugin that silently misses runtime components.
+
+If the source project's `.claude/` references files from third-party plugins (e.g. `~/.claude/plugins/<name>/...`), detect those names and add them to `dependencies`. If unsure, leave `[]` and document the manual install steps in the generated README.
 
 ### 3b. Convert hooks
 

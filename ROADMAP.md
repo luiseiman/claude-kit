@@ -1,10 +1,47 @@
 # Roadmap dotforge
 
-Estado actual: **v3.7.0** (2026-05-05) — Init inteligente (snapshot + drift + Setup validation) sumado al auto-compact inteligente (filter + history). Propagado a los 12 proyectos registrados. 7 GitHub releases publicados (v3.4.1 → v3.7.0).
+Estado actual: **v3.9.0** (2026-05-22) — Sync con Claude Code v2.1.141-143 (Stop hook 8-block cap, terminalSequence, claude agents launcher, worktree.bgIsolation, rewind+summarize partial, fast mode Opus 4.7 default, plugin dependency enforcement, plugin flat shape). Propagado a los 12 proyectos. 11 GitHub releases publicados (v3.4.1 → v3.9.0).
 
 ---
 
 ## Completado
+
+### v3.9.0 — Sync from Claude Code v2.1.141-143 (2026-05-22)
+
+`/forge watch` + `/forge update` procesando 13 items del inbox (acumulado 2026-05-18 a 2026-05-19). 8 incorporados, 3 rechazados (1 informational sin acción, 2 auto-stubs), 2 diferidos (Windows / enterprise federation).
+
+#### Domain rules
+- **`hook-events.md`** — nueva sección "Hook JSON output fields (universal)" con `terminalSequence` (v2.1.141+); Stop hook contract con 8-block convergence cap + `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP`.
+- **`hook-architecture.md`** — Stop hook convergence contract con patterns (counters en `.claude/session/`, `systemMessage` en vez de `block`).
+- **`model-ids.md`** — fast mode default = Opus 4.7 (v2.1.142+) con `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE` opt-out.
+- **`cli-flags.md`** — `claude agents` documentado como launcher con 9 flags. Env vars nuevas.
+- **`parallel-sessions.md`** — `worktree.bgIsolation: "auto"|"none"` con trade-offs (Bazel/codegen). `claude agents` como launcher con persistencia en `/bg` detach.
+- **`compaction-strategy.md`** — 4ª modalidad: rewind + "Summarize up to here" (v2.1.141).
+
+#### Skill + docs
+- **`plugin-generator`** — flat (root `SKILL.md`, v2.1.142+) vs structured shapes; `plugin.json` con `dependencies: []` per v2.1.143 enforcement.
+- **`docs/best-practices.md`** — nueva subsección "Recent additions (v2.1.141-143)" con 6 entries.
+
+### v3.8.1 — Docs domain migration (2026-05-18)
+
+Refactor de referencias `docs.anthropic.com` → `code.claude.com` en domain rules y link rules. `domain/cli-flags.md` last-verified bumped.
+
+### v3.8.0 — Sync from Claude Code v2.1.129→v2.1.140 + new domain/auth.md (2026-05-13)
+
+- **Nueva `domain/auth.md`** documentando precedence: `ANTHROPIC_API_KEY` > `apiKeyHelper` > `CLAUDE_CODE_OAUTH_TOKEN` > Claude.ai login > Console login. v2.1.139+ rule: API-key presence disables Remote Control, `/schedule`, notification preferences (incluso con Claude.ai login).
+- **CI canonical path** documentado: `claude setup-token` para CI runs con Claude subscription.
+- **Anti-patterns** registrados: `ANTHROPIC_API_KEY` en `~/.bashrc` silently disables features; sharing OAuth token entre CI y dev machine.
+- Updates en `hook-events.md`, `hook-architecture.md`, `parallel-sessions.md`, `cli-flags.md`, `agent-orchestration.md` cubriendo `--bg`, `claude agents`, `worktree.baseRef`, `--from-pr`, etc.
+
+### v3.7.1 — Evidence-based compaction policy: 80% threshold (2026-05-05)
+
+Política basada en evidencia: academia (Liu, Chroma, Kamradt) + práctica de campo (Boris Cherny, Daniel San, Avthar, Paweł Huryn). Threshold canónico: **80%** del context window.
+
+- **`domain/compaction-strategy.md`** (nueva, 70 líneas) — política con citas, `/compact` vs `/clear` vs subagent, anti-patterns, cache economy.
+- **`/forge compact-task`** (slash command) — wrapper de `/compact` con hint estandarizado.
+- **`/forge context-status`** (slash command read-only) — reporte de uso + cache health.
+- **`pre-compact-warning.sh`** (UserPromptSubmit hook) — alerta proactiva al 80% (warning) y 90% (urgent). Configurable via env vars.
+- **`docs/internal/compaction-strategy.md`** (200 líneas) — guía operacional con flow chart, decision tables, configuración por tipo de proyecto.
 
 ### v3.7.0 — Smart init: startup snapshot + drift + Setup validation (2026-05-05)
 

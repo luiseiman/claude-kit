@@ -8,7 +8,7 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/luiseiman/dotforge)](https://github.com/luiseiman/dotforge/stargazers)
 [![License: MIT](https://img.shields.io/github/license/luiseiman/dotforge)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.7.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-3.9.0-blue)](VERSION)
 [![Last commit](https://img.shields.io/github/last-commit/luiseiman/dotforge)](https://github.com/luiseiman/dotforge/commits/main)
 
 **Behavior governance for [Claude Code](https://docs.anthropic.com/en/docs/claude-code).** Declare runtime policies on tool calls — "search before writing", "no destructive git", "verify before shipping" — and enforce them via compiled `PreToolUse` hooks that share a session-scoped state file. Escalates silently → nudge → warning → soft_block → hard_block, with a permanent override audit trail.
@@ -32,7 +32,43 @@ bootstrap → audit → sync → capture → propagate → behaviors
 
 For people and teams managing more than one Claude Code project.
 
-## v3.7 — what's new (2026-05-05)
+## v3.9 — what's new (2026-05-22)
+
+### Sync from Claude Code v2.1.141-143 (v3.9.0)
+
+- **Stop hook 8-block convergence cap** — Stop hooks returning `decision: "block"` repeatedly used to loop forever. Now capped at 8 consecutive blocks (`CLAUDE_CODE_STOP_HOOK_BLOCK_CAP` to override). Anti-pattern documented in `domain/hook-architecture.md` and `domain/hook-events.md`.
+- **`terminalSequence` hook output (v2.1.141+)** — hooks can emit escape sequences for desktop notifications, window titles, terminal bell without controlling-TTY. New "Hook JSON output fields (universal)" section in `domain/hook-events.md`.
+- **`claude agents` as launcher (v2.1.141-143)** — 9 flags (`--cwd`, `--add-dir`, `--settings`, `--mcp-config`, `--plugin-dir`, `--permission-mode`, `--model`, `--effort`, `--dangerously-skip-permissions`) configure dispatched bg sessions. `/bg` detach preserves them. Documented in `domain/cli-flags.md` and `domain/parallel-sessions.md`.
+- **`worktree.bgIsolation: "auto"|"none"` (v2.1.143)** — opt-out from auto-worktree for `--bg` sessions in repos where worktrees are impractical (Bazel, codegen-to-root, deep `.gitmodules`). Trade-offs documented in `domain/parallel-sessions.md`.
+- **Rewind + "Summarize up to here" (v2.1.141)** — sixth rewind menu option. Compresses context from session start to a chosen checkpoint, preserves later turns. New modality in `domain/compaction-strategy.md`.
+- **Fast mode default flipped to Opus 4.7 (v2.1.142)** — `/fast` now uses 4.7. Pin to 4.6 with `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE=1` only if benchmark reproducibility matters.
+- **Plugin dependency enforcement (v2.1.143)** — `claude plugin disable` refuses if other plugins depend on the target (shows disable-chain). `enable` force-enables transitive deps. `skills/plugin-generator/SKILL.md` updated to declare `dependencies: []` in generated `plugin.json`.
+- **Plugin flat shape (v2.1.142+)** — `SKILL.md` at plugin root (no `skills/` dir) is now surfaced automatically. `plugin-generator` skill picks flat vs structured based on component count.
+
+### Auth model + docs domain migration (v3.8.0-v3.8.1)
+
+- **New `domain/auth.md`** documenting `ANTHROPIC_API_KEY` / `CLAUDE_CODE_OAUTH_TOKEN` / Claude.ai login precedence and the v2.1.139+ rule that API-key presence disables Remote Control, `/schedule`, and notification preferences (anti-pattern: `ANTHROPIC_API_KEY` in `.bashrc` silently disables features). CI canonical path documented (`claude setup-token`).
+- **`docs.anthropic.com` → `code.claude.com` migration** — all internal references and link rules updated; `domain/cli-flags.md` last-verified bumped.
+
+### Smart init + smart auto-compact (v3.6.3 + v3.7.0 + v3.7.1)
+
+- **Smart auto-compact** — `scripts/compact-filter.py` pipes `compact_summary` through a conservative filter before persisting to `last-compact.md`. Rotating history under `.claude/session/compact-history/`. Worst case: file unchanged (filter is a safety net).
+- **Smart init** — `session-startup.sh` (SessionStart hook for all sources except `compact`) captures branch, HEAD, working-tree count, recent edits (24h), pending TODOs, behaviors disabled. Compares against last snapshot for drift. Injects brief into context only when noteworthy.
+- **Setup hook validation** — `pre-session-check.sh` wired in `Setup` (matchers `init`, `maintenance`). Validates `settings.json` JSON, `block-destructive.sh` executable, `behaviors/index.yaml` YAML, all wired hooks present + executable. Exit 2 blocks session start.
+- **Evidence-based compaction policy** — research combining academia (Liu et al., Chroma, Kamradt) and field practice (Boris Cherny, Daniel San, Avthar, Paweł Huryn) consolidated. Canonical threshold: **80%** of context window. New `pre-compact-warning.sh` UserPromptSubmit hook warns at 80%/90%. `/forge compact-task` and `/forge context-status` slash commands.
+
+### Audit hardening (v3.6.1 → v3.6.2)
+
+- **`search-first` behavior disabled** — flag-consume design generated false positives in sessions with prior context.
+- **Permission rule split** — `domain/permission-model.md` (112 → 59 lines) + new `domain/permission-managed-settings.md` (60 lines, distinct globs).
+- **Inbox signal gate** — `detect-claude-changes.sh` skips auto-stub captures when total < 15 files and no structural change.
+- **Honest validation rate** — `not-applicable` renamed to `informational`. Practices that don't target a specific error are excluded from the validation rate calc.
+
+### Sync from Claude Code v2.1.120-128 (v3.5.0 → v3.6.0)
+
+- **`Setup` event** added to dotforge's catalogue. **`PostToolUse.updatedToolOutput`** generalized to all tools (v2.1.121+). **5 managed-only enterprise fields** documented. **`alwaysLoad: true`** per-MCP-server option. **`workspace`** reserved as MCP server name. **`disable-model-invocation`** frontmatter field. **`${CLAUDE_EFFORT}`** runtime placeholder. **`channelsEnabled`** required for API-key auth on `--channels`. New `domain/plugin-distribution.md`.
+
+## v3.4 — what's new (2026-04-26)
 
 ### Smart init + smart auto-compact (v3.6.3 + v3.7.0)
 

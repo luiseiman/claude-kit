@@ -34,10 +34,10 @@ practices:
 
   - id: fix-loop-root-cause
     error_targeted: "multiple fix commits for same symptom without resolving root cause (import errors, shadowed packages, config bugs)"
-    last_checked: 2026-05-18
+    last_checked: 2026-05-27
     error_type: logic
     activated: 2026-03-24
-    recurrence_checks: 4
+    recurrence_checks: 5
     recurrence_target: 5
     recurred: false
     status: monitoring
@@ -46,10 +46,10 @@ practices:
 
   - id: websocket-shadow-import
     error_targeted: "local directory name shadows PyPI package causing AttributeError on import (e.g., websocket/ shadows websocket-client)"
-    last_checked: 2026-05-18
+    last_checked: 2026-05-27
     error_type: config
     activated: 2026-03-24
-    recurrence_checks: 4
+    recurrence_checks: 5
     recurrence_target: 5
     recurred: false
     status: monitoring
@@ -82,12 +82,12 @@ practices:
     error_targeted: "writing PreCompact hook with exit 2 expecting to block compaction — silently ignored"
     error_type: config
     activated: 2026-03-30
-    recurrence_checks: 3
+    recurrence_checks: 4
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 0
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: practice-2026-03-30-hook-types-http-prompt-agent
     error_targeted: null
@@ -203,23 +203,23 @@ practices:
     error_targeted: "destructive slash command auto-invoked by the model without user gating"
     error_type: security
     activated: 2026-04-20
-    recurrence_checks: 2
+    recurrence_checks: 3
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 0
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: permission-request-updatedinput-deny-recheck
     error_targeted: "hook returning updatedInput bypasses permissions.deny via mutation"
     error_type: security
     activated: 2026-04-20
-    recurrence_checks: 2
+    recurrence_checks: 3
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 0
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: prompt-cache-1h-ttl
     error_targeted: null
@@ -236,23 +236,23 @@ practices:
     error_targeted: "hook `if` filter written on non-tool event silently ignored — fires unconditionally"
     error_type: config
     activated: 2026-04-21
-    recurrence_checks: 2
+    recurrence_checks: 3
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 0
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: sandbox-denieddomains-and-env-scrub
     error_targeted: "credentials leaked to subprocess via inherited env; allowedDomains wildcards trust bad hosts"
     error_type: security
     activated: 2026-04-21
-    recurrence_checks: 2
+    recurrence_checks: 3
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 0
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: focus-command-replaces-ctrl-o
     error_targeted: null
@@ -302,12 +302,12 @@ practices:
     error_targeted: "session-report.sh writes malformed JSON via grep -c || echo 0 + cascade from corrupted previous file"
     error_type: logic
     activated: 2026-04-21
-    recurrence_checks: 2
+    recurrence_checks: 3
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 10
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   # v3.4.0 — 2026-04-26 watch sync
   - id: practice-2026-04-26-hook-duration-ms
@@ -325,12 +325,12 @@ practices:
     error_targeted: "auto mode classifier silently replaced (not extended) when custom autoMode arrays defined without $defaults placeholder"
     error_type: config
     activated: 2026-04-26
-    recurrence_checks: 1
+    recurrence_checks: 2
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 0
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: practice-2026-04-26-usage-merge-and-skill-collision
     error_targeted: null
@@ -369,12 +369,12 @@ practices:
     error_targeted: "hook with matcher Glob or Grep silently never fires on native macOS/Linux builds (v2.1.117+)"
     error_type: config
     activated: 2026-04-26
-    recurrence_checks: 1
+    recurrence_checks: 2
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 0
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: practice-2026-04-26-tui-fullscreen-setting
     error_targeted: null
@@ -413,12 +413,12 @@ practices:
     error_targeted: "Bash(find:*) allow rule no longer auto-approves -exec/-delete (v2.1.113+) — stack hooks relying on auto-approval prompt instead"
     error_type: security
     activated: 2026-04-26
-    recurrence_checks: 1
+    recurrence_checks: 2
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 0
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: practice-2026-04-26-userpromptsubmit-session-title
     error_targeted: null
@@ -446,56 +446,56 @@ practices:
     error_targeted: "audit item 14 awards 1 point for behaviors/index.yaml declaration without verifying compiled hooks under .claude/hooks/generated/ are referenced in settings.json"
     error_type: logic
     activated: 2026-04-26
-    recurrence_checks: 1
+    recurrence_checks: 2
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 1
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: verify-before-done-regex-missing-bash-tests
     error_targeted: "verify-before-done behavior soft-blocks git push from dotforge after legitimate bash tests/test-*.sh run because regex did not include bash test runners"
     error_type: config
     activated: 2026-04-26
-    recurrence_checks: 1
+    recurrence_checks: 2
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 1
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: psr-gate-baseline-adrs
     error_targeted: "ADR declares baseline strategy based on Sharpe delta indistinguishable from noise"
     error_type: logic
     activated: 2026-04-27
-    recurrence_checks: 1
+    recurrence_checks: 2
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 0
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: plugin-data-variable
     error_targeted: "plugin state lost on update because stored in install dir"
     error_type: integration
     activated: 2026-05-05
-    recurrence_checks: 1
+    recurrence_checks: 2
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 0
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: claude-project-purge
     error_targeted: "stale Claude Code project state after /forge reset (orphaned transcripts/manifests)"
     error_type: integration
     activated: 2026-05-05
-    recurrence_checks: 1
+    recurrence_checks: 2
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 0
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: plugin-seed-multi-dir
     error_targeted: null
@@ -512,12 +512,12 @@ practices:
     error_targeted: "automation with --dangerously-skip-permissions writes to .claude/ from injected prompts"
     error_type: security
     activated: 2026-05-05
-    recurrence_checks: 1
+    recurrence_checks: 2
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 0
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: resume-pr-url-search
     error_targeted: null
@@ -534,23 +534,23 @@ practices:
     error_targeted: "agents have memory enabled but accumulate no learnings — knowledge loss"
     error_type: config
     activated: 2026-05-05
-    recurrence_checks: 1
+    recurrence_checks: 2
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 1
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: posttooluse-updated-output-all-tools
     error_targeted: "PostToolUse hook rewriting tool output hides errors from model"
     error_type: logic
     activated: 2026-05-05
-    recurrence_checks: 1
+    recurrence_checks: 2
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 0
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: setup-hook-event
     error_targeted: null
@@ -623,34 +623,34 @@ practices:
     error_targeted: "PostToolUse validation hook block kills agent flow even when failure is non-fatal (lint, type-check, drift)"
     error_type: config
     activated: 2026-05-13
-    recurrence_checks: 0
+    recurrence_checks: 1
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 0
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: practice-2026-05-13-hook-args-exec-form
     error_targeted: "shell injection or quoting bugs when hook command interpolates ${tool_input.*} with spaces or special chars"
     error_type: security
     activated: 2026-05-13
-    recurrence_checks: 0
+    recurrence_checks: 1
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 0
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: practice-2026-05-13-automode-hard-deny
     error_targeted: "auto mode classifier auto-approves a curl|sh / eval pipe on benign-sounding rationalization, executing untrusted code"
     error_type: security
     activated: 2026-05-13
-    recurrence_checks: 0
+    recurrence_checks: 1
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 0
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: practice-2026-05-13-hook-effort-visibility
     error_targeted: null
@@ -667,34 +667,34 @@ practices:
     error_targeted: "Remote Control / /schedule / claude.ai MCP connectors silently disabled when ANTHROPIC_API_KEY is set alongside Claude.ai login"
     error_type: config
     activated: 2026-05-13
-    recurrence_checks: 0
+    recurrence_checks: 1
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 0
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: practice-2026-05-13-worktree-baseref-fresh-default
     error_targeted: "Agent Team worktrees missing unpushed local commits after v2.1.133 default flip from head to fresh"
     error_type: config
     activated: 2026-05-13
-    recurrence_checks: 0
+    recurrence_checks: 1
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 0
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: practice-2026-05-13-plan-mode-blocks-edit-allow
     error_targeted: "plan mode wrote files under Edit(*) allow rule before v2.1.136 fix"
     error_type: security
     activated: 2026-05-13
-    recurrence_checks: 0
+    recurrence_checks: 1
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 0
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
 
   - id: practice-2026-05-13-claude-bg-background-sessions
     error_targeted: null
@@ -722,12 +722,12 @@ practices:
     error_targeted: "custom gateway models silently missing from /model picker after v2.1.129 discovery default flipped from auto to opt-in"
     error_type: config
     activated: 2026-05-13
-    recurrence_checks: 0
+    recurrence_checks: 1
     recurrence_target: 5
     recurred: false
     status: monitoring
     projects_applied: 0
-    last_checked: 2026-05-13
+    last_checked: 2026-05-27
   - id: practice-2026-05-18-docs-domain-migration-claude-code
     error_targeted: null
     error_type: null
@@ -745,11 +745,11 @@ practices:
     error_targeted: "agents launcher misconfigured (wrong flags)"
     error_type: config
     activated: 2026-05-22
-    recurrence_checks: 0
+    recurrence_checks: 1
     recurrence_target: 5
     status: monitoring
     projects_applied: 1
-    last_checked: null
+    last_checked: 2026-05-27
   - id: practice-2026-05-18-fast-mode-opus-4-7-default
     error_targeted: null
     error_type: null
@@ -772,11 +772,11 @@ practices:
     error_targeted: "plugin disabled breaks dependent plugin silently"
     error_type: integration
     activated: 2026-05-22
-    recurrence_checks: 0
+    recurrence_checks: 1
     recurrence_target: 5
     status: monitoring
     projects_applied: 1
-    last_checked: null
+    last_checked: 2026-05-27
   - id: practice-2026-05-18-plugin-root-skill-md
     error_targeted: null
     error_type: null
@@ -799,20 +799,20 @@ practices:
     error_targeted: "stop hook infinite block loop"
     error_type: logic
     activated: 2026-05-22
-    recurrence_checks: 0
+    recurrence_checks: 1
     recurrence_target: 5
     status: monitoring
     projects_applied: 1
-    last_checked: null
+    last_checked: 2026-05-27
   - id: practice-2026-05-18-worktree-bgisolation-none
     error_targeted: "bg session worktree creation fails on Bazel/codegen"
     error_type: config
     activated: 2026-05-22
-    recurrence_checks: 0
+    recurrence_checks: 1
     recurrence_target: 5
     status: monitoring
     projects_applied: 1
-    last_checked: null
+    last_checked: 2026-05-27
 
   # v3.9.1 — 2026-05-27 security patch (5 upstream security fixes)
   - id: practice-2026-05-27-powershell-cd-permission-bypass

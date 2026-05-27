@@ -2,7 +2,7 @@
 globs: "**/settings.json,**/settings.local.json,**/settings.json.partial"
 description: "Permission modes, evaluation cascade, deny list requirements"
 domain: claude-code-engineering
-last_verified: 2026-05-13
+last_verified: 2026-05-27
 ---
 
 # Permission Model
@@ -35,6 +35,16 @@ Managed > Local (`.claude/settings.local.json`) > Project (`.claude/settings.jso
 ## Bash prefix detection
 
 Separate fast-model LLM call extracts command prefixes. `cat foo.txt` → `cat`. `git commit -m "foo"` → `git commit`. `npm run lint` → `none` (always prompts). Injection like `git status\`ls\`` → `command_injection_detected`.
+
+## Permission-detection bypasses fixed in v2.1.145-149
+
+Three classes of prefix-detection holes patched in the v2.1.145–v2.1.149 hardening pass. Projects running older versions may have had silent auto-approvals for these patterns:
+
+- **Bare env var assignments** (v2.1.145): `FOO=bar some-command` with `FOO` not on the known-safe allowlist (`LANG`, `TZ`, `NO_COLOR`, etc.) was auto-approved. The bare-assignment case wasn't routed through env-prefix detection.
+- **PowerShell built-in `cd` functions** (v2.1.149): `cd..`, `cd\`, `cd~`, and drive-letter switches like `X:` changed the working directory without being detected, letting a subsequent command in the same PowerShell call read outside the workspace boundary. Affects Windows users + anyone with `CLAUDE_CODE_USE_POWERSHELL_TOOL=1` on Linux/macOS.
+- **Stale `PWD`/`OLDPWD`/`DIRSTACK` variable tracking** (v2.1.149): the parser trusted stale values across `cd`/`pushd`/`popd`, enabling the same workspace-escape class as the cd built-ins.
+
+Defense-in-depth that catches these even when prefix detection missed them: `block-destructive.sh` (regex over full command string) + kernel-level `sandbox.filesystem.denyRead`. See `sandboxing.md`.
 
 ## Core rules
 

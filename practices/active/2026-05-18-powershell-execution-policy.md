@@ -4,10 +4,10 @@ title: PowerShell tool pasa -ExecutionPolicy Bypass y se habilita por default en
 source: https://code.claude.com/docs/en/changelog
 source_type: changelog
 discovered: 2026-05-18
-status: inbox
+status: active
 tags: [windows, powershell, security, bedrock, vertex, foundry, claude-code-v2.1.143, needs-windows-user]
 tested_in: null
-incorporated_in: []
+incorporated_in: ["docs/changelog.md#v391"]
 replaced_by: null
 ---
 

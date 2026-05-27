@@ -4,6 +4,36 @@
 >
 > Historial de versiones. Las entradas usan español/inglés mixto según la evolución del proyecto. Los términos técnicos son universales.
 
+## v3.9.1 (2026-05-27)
+
+### Upstream security fixes propagated (v2.1.145 → v2.1.149)
+
+Patch release dedicated to five upstream security/permission fixes from the v2.1.145–v2.1.149 hardening pass. No feature additions — see v3.10.0 for those. Projects auditing against pre-v2.1.149 Claude Code builds should re-verify; the fixed bugs could cause silent permission/sandbox bypasses.
+
+#### Domain rules
+
+- **`domain/permission-model.md`** — new "Permission-detection bypasses fixed in v2.1.145-149" section documenting three classes:
+  - **Bare env var assignments** (v2.1.145 fix): `FOO=bar cmd` with non-allowlisted vars was auto-approved
+  - **PowerShell built-in `cd` functions** (v2.1.149 fix): `cd..`, `cd\`, `cd~`, `X:` changed working dir undetected, letting a later command escape the workspace
+  - **Stale `PWD`/`OLDPWD`/`DIRSTACK` tracking** (v2.1.149 fix): same escape class via stale variable values across `cd`/`pushd`/`popd`
+- **`domain/sandboxing.md`** — new "Worktree allowlist scope fix" section: pre-v2.1.149 the sandbox write allowlist covered the entire main repo root instead of just the shared `.git` subset. Agent Teams patterns that relied on worktree teammates writing to main-repo files were exploiting the bug. Also new "PowerShell execution policy bypass" section documenting `-ExecutionPolicy Bypass` default + opt-out via `CLAUDE_CODE_POWERSHELL_RESPECT_EXECUTION_POLICY=1`.
+- **`domain/auth.md`** — new "Enterprise enforcement fix (v2.1.147)" section: managed-settings `forceLoginOrgUUID` / `forceLoginMethod` were enforced only against Claude.ai sessions; third-party-provider (Bedrock/Vertex/Foundry) and API-key sessions silently bypassed. Now fixed — re-verify enterprise audits.
+- **`domain/permission-managed-settings.md`** — `forceLoginOrgUUID` / `forceLoginMethod` row added with v2.1.147 fix note.
+- **`.claude/rules/agents.md`** — Agent Teams worktree note: pre-v2.1.149 teammates had sandbox-blessed write access to entire main repo; post-fix limited to worktree + shared `.git` subset.
+
+#### Security checklist
+
+- **`docs/security-checklist.md`** — new "Windows PowerShell execution policy" entry under Claude Code permissions: opt-out env vars, plus warning to audit any Windows project on pre-v2.1.149 builds.
+
+#### Practices
+
+- 5 practices migrated inbox → active (`status: monitoring`, all `error_type: security`)
+- `metrics.yml`: 5 new entries
+
+#### Recommended action for managed projects
+
+Re-audit any project with `claude --worktree` patterns, Windows + PowerShell tool, or enterprise `forceLogin*` managed settings. The v3.9.1 sync is the marker for "I've reviewed against the v2.1.149 hardening pass". `/forge audit` to refresh the score.
+
 ## v3.9.0 — 2026-05-22
 
 ### Sync from Claude Code v2.1.141-143

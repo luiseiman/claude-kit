@@ -68,6 +68,14 @@ Claude Code supports 6 permission modes that control when operations require con
 - [ ] Document which permissions are stripped in auto-mode for team awareness
 - [ ] Test critical workflows with auto-mode enabled to verify they still work
 
+### Windows PowerShell execution policy (v2.1.143+)
+
+Claude Code passes `-ExecutionPolicy Bypass` by default when invoking PowerShell, allowing unsigned scripts. Auto-enabled on Windows for Bedrock/Vertex/Foundry users.
+
+- [ ] If the org enforces signed scripts (AppLocker, strict PSScriptAnalyzer): set `CLAUDE_CODE_POWERSHELL_RESPECT_EXECUTION_POLICY=1` before invoking `claude`
+- [ ] If PowerShell is unused: set `CLAUDE_CODE_USE_POWERSHELL_TOOL=0` to disable the tool entirely (eliminates the cd-bypass class entirely)
+- [ ] v2.1.149+ closed three Windows permission-detection bypasses (`cd..`, `cd\`, `cd~`, `X:` built-ins + stale `PWD`/`OLDPWD`/`DIRSTACK` tracking). Pre-v2.1.149 sessions may have allowed reads outside the workspace silently — audit any Windows project on older Claude Code
+
 ### `--dangerously-skip-permissions` tradeoffs (v2.1.121+)
 
 Since v2.1.121/126, this flag bypasses prompts for writes to `.claude/skills/`, `.claude/agents/`, `.claude/commands/`, `.claude/`, `.git/`, `.vscode/`, and shell config files. Catastrophic removals still prompt as a safety net.

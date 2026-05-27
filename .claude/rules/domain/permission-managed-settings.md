@@ -2,7 +2,7 @@
 globs: "**/managed-settings.json,**/managed-settings.d/*.json,**/.mcp.json,**/settings.json"
 description: "Enterprise managed settings, MCP server governance, dynamic hook-mutated permissions"
 domain: claude-code-engineering
-last_verified: 2026-05-05
+last_verified: 2026-05-27
 ---
 
 # Permission Model — Enterprise & MCP
@@ -21,6 +21,7 @@ Companion to `permission-model.md`. Covers managed-scope governance, MCP server 
 - `strictKnownMarketplaces` — managed allowlist of plugin marketplace sources (exact match; `github`, `git`, `url`, `npm`, `file`, `directory`, `hostPattern`)
 - `blockedMarketplaces` — managed denylist; takes precedence over `extraKnownMarketplaces`
 - `pluginTrustMessage` — custom warning shown on plugin trust prompts
+- `forceLoginOrgUUID` / `forceLoginMethod` — restrict login to org UUIDs or to `claudeai`/`console`. **v2.1.147 fix**: now enforced against third-party-provider (Bedrock/Vertex/Foundry) AND API-key sessions; before v2.1.147 those bypassed both restrictions silently. Re-verify enterprise audits done on older Claude Code builds. See `auth.md`
 
 ## MCP server config
 

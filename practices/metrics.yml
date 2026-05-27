@@ -813,3 +813,59 @@ practices:
     status: monitoring
     projects_applied: 1
     last_checked: null
+
+  # v3.9.1 — 2026-05-27 security patch (5 upstream security fixes)
+  - id: practice-2026-05-27-powershell-cd-permission-bypass
+    error_targeted: "PowerShell cd.. / cd\\ / cd~ / X: built-in functions changed working dir undetected, letting a later command read outside the workspace"
+    error_type: security
+    activated: 2026-05-27
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: monitoring
+    projects_applied: 0
+    last_checked: 2026-05-27
+
+  - id: practice-2026-05-27-sandbox-worktree-allowlist-scope-bug
+    error_targeted: "sandbox write allowlist in git worktrees covered the entire main repo root instead of only the shared .git subset, granting unintended write access from worktree code"
+    error_type: security
+    activated: 2026-05-27
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: monitoring
+    projects_applied: 0
+    last_checked: 2026-05-27
+
+  - id: practice-2026-05-27-forcelogin-managed-bypass
+    error_targeted: "managed-settings forceLoginOrgUUID and forceLoginMethod enforced only against Claude.ai login sessions; third-party-provider and API-key sessions silently bypassed both restrictions"
+    error_type: security
+    activated: 2026-05-27
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: monitoring
+    projects_applied: 0
+    last_checked: 2026-05-27
+
+  - id: practice-2026-05-27-bare-env-var-permission-bypass
+    error_targeted: "bare env var assignments to non-allowlisted vars in Bash (e.g. FOO=bar cmd) auto-approved during permission analysis, bypassing rules that should have flagged them"
+    error_type: security
+    activated: 2026-05-27
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: monitoring
+    projects_applied: 0
+    last_checked: 2026-05-27
+
+  - id: practice-2026-05-18-powershell-execution-policy
+    error_targeted: "PowerShell tool passes -ExecutionPolicy Bypass by default, enabling unsigned-script execution; crosses OS trust boundary for enterprises with AppLocker or signed-only policies"
+    error_type: security
+    activated: 2026-05-27
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: monitoring
+    projects_applied: 0
+    last_checked: 2026-05-27

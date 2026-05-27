@@ -41,6 +41,7 @@ Team structure pattern:
 - Each teammate MUST use `isolation: "worktree"` to work on an isolated copy of the repo
 - Lead agent coordinates merges from worktree branches into the main branch
 - Require plan approval before any teammate writes code
+- **v2.1.149 scope fix**: pre-v2.1.149 worktree teammates had sandbox-blessed write access to the entire main repo (bug). Post-fix, writes are correctly limited to the worktree itself + shared `.git` subset. Agent Teams patterns that relied on teammates editing main-repo files directly were exploiting the bug — rework so teammates merge upstream via branches, not direct writes. See `domain/sandboxing.md`
 
 ## Context & Error Handling
 

@@ -2,7 +2,7 @@
 globs: "**/settings.json,**/settings.local.json,**/settings.json.partial"
 description: "OS-level bash sandboxing — filesystem and network isolation complementary to permission rules"
 domain: claude-code-engineering
-last_verified: 2026-04-21
+last_verified: 2026-05-27
 ---
 
 # Sandboxing
@@ -45,3 +45,23 @@ Projects with secrets in env/home (cloud creds, API keys, trading bots), agents 
 ## Interaction with permission model
 
 Sandbox is a second layer. `block-destructive.sh` and `deny:` still apply as defense-in-depth. With `autoAllowBashIfSandboxed: true`, bash `ask:`/`allow:` become less relevant for kernel-protected commands, but still cover `excludedCommands` fallback.
+
+## Worktree allowlist scope fix (v2.1.149)
+
+When working inside a `claude --worktree`, the sandbox's automatic write allowlist for the shared `.git` directory was previously covering the **entire main repo root** (with `hooks/` and `config` denied as exceptions). v2.1.149 corrected the scope to just the shared `.git` directory subset.
+
+Implications:
+- Pre-v2.1.149: code running in a worktree had sandbox-blessed write access to most of the main repo's files
+- Post-v2.1.149: sandbox correctly limits writes to the worktree itself + the legitimate shared `.git` paths
+- Agent Teams patterns that relied on worktree teammates writing to main-repo files were exploiting the bug — verify and rework
+
+## PowerShell execution policy bypass (v2.1.143+)
+
+Claude Code passes `-ExecutionPolicy Bypass` by default when invoking the PowerShell tool, allowing unsigned scripts to run. Enabled by default for Windows users on Bedrock/Vertex/Foundry.
+
+For enterprise environments with AppLocker, signed-only PowerShell policies, or strict PSScriptAnalyzer rules, this crosses the OS-level trust boundary:
+
+- `CLAUDE_CODE_POWERSHELL_RESPECT_EXECUTION_POLICY=1` — opt out of the bypass; the tool honors the system execution policy
+- `CLAUDE_CODE_USE_POWERSHELL_TOOL=0` — disable the PowerShell tool entirely
+
+For projects that handle financial data, healthcare records, or any regulated workload on Windows, set the respect-policy env var as a managed-settings env or in the CI runbook.

@@ -2,7 +2,7 @@
 globs: "**/settings.json,**/CLAUDE.md,**/.env*,**/scripts/**/*.sh,**/.github/workflows/*.yml"
 description: "Auth model — API key vs Claude.ai vs OAuth vs setup-token; precedence rules"
 domain: claude-code-engineering
-last_verified: 2026-05-13
+last_verified: 2026-05-27
 ---
 
 # Auth Model
@@ -52,8 +52,15 @@ Requires a Claude subscription. Tokens are long-lived but rotate periodically �
 - Sharing one OAuth token across CI and a human's dev machine — token revocation kills both
 - Committing `apiKeyHelper` script paths that resolve to a developer's home directory — breaks on other machines and in CI
 
+## Enterprise enforcement fix (v2.1.147)
+
+The managed-settings `forceLoginOrgUUID` (restrict login to specific org UUIDs) and `forceLoginMethod` (`claudeai` | `console`) were enforced **only against Claude.ai login sessions** before v2.1.147. **Third-party-provider** (Bedrock, Vertex, Foundry) and **API-key** (`ANTHROPIC_API_KEY`) sessions bypassed both restrictions silently.
+
+Post-fix: both managed-settings apply to all session types. Pre-v2.1.147 enterprise audits may have a false sense of coverage — re-verify on a current Claude Code build.
+
 ## Cross-references
 
 - `permission-model.md` — settings cascade (Managed > Local > Project > User)
+- `permission-managed-settings.md` — `forceLoginOrgUUID`, `forceLoginMethod`, managed-mcp.json
 - `cli-flags.md` — `claude auth (login|logout|status)`, `claude setup-token`, `--remote-control`
 - `sandboxing.md` — `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` strips creds from subprocess env

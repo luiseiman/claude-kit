@@ -14,7 +14,7 @@ Before starting any task, evaluate:
 3. **Code changes + tests needed** → delegate to `implementer`
 4. **Security/vulnerability concern** → delegate to `security-auditor`
 5. **Multi-component refactor (>3 files, >2 concerns)** → evaluate Agent Teams
-6. **Code review before merge** → delegate to `code-reviewer`
+6. **Code review before merge** → delegate to `code-reviewer` subagent (in-flight, structured chain-of-review with memory) OR invoke `/code-review` slash command (v2.1.147+, ad-hoc end-of-PR pass; `--comment` posts inline GitHub PR comments, `--fix` applies findings)
 7. **Architecture decision or tradeoff analysis** → delegate to `architect`
 8. **Session analysis / pattern detection / /forge insights** → delegate to `session-reviewer`
 
@@ -37,6 +37,8 @@ Spawn an Agent Team ONLY when ALL of these hold:
 
 Team pattern: Lead (coordinates, no implementation) + max 3-4 teammates.
 Each teammate MUST use `isolation: "worktree"`. Lead merges branches. Plan approval required.
+
+**v2.1.149 sandbox scope fix**: pre-v2.1.149 worktree teammates had sandbox-blessed write access to the entire main repo (bug). Post-fix limited to worktree + shared `.git` subset. Teammates must merge upstream via branches, not edit main-repo files directly.
 
 ## Task Tracking
 

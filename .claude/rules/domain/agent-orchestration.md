@@ -2,7 +2,7 @@
 globs: "**/agents/*.md,**/rules/agents.md"
 description: "Agent delegation patterns and team coordination"
 domain: claude-code-engineering
-last_verified: 2026-04-20
+last_verified: 2026-05-27
 ---
 
 # Agent Orchestration
@@ -39,6 +39,14 @@ last_verified: 2026-04-20
 - Dynamic loading from `~/.claude/agents/` — custom agent definitions auto-discovered
 - Subagent output must not exceed 30% of main context — always structured summaries
 - Always verify subagent output (run tests/lint) before declaring task done
+- `/reload-skills` slash command (v2.1.152+) re-scans skill directories in the current session without restart — pair with the SessionStart hook field `reloadSkills: true` if a hook installs skills
+
+## OpenTelemetry instrumentation (v2.1.139+, v2.1.145+)
+
+- `claude_code.llm_request` spans carry `agent_id` and `parent_agent_id` attributes (v2.1.139+)
+- `claude_code.tool` spans carry the same attributes since v2.1.145 — pre-v2.1.145 tool spans lacked agent attribution
+- Trace parenting fixed in v2.1.145: background subagent spans correctly nest under the dispatching Agent tool span (before, they were roots — broke the agent-tree visualization)
+- Combined effect: distributed tracing of agent trees is now complete
 
 ## Related: top-level parallelism
 

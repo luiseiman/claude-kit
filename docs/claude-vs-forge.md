@@ -114,7 +114,8 @@ These have no dotforge equivalent — they manage the runtime session:
 |---------|----------|
 | `/compact`, `/context`, `/rewind` | Context management |
 | `/plan`, `/ultraplan` | Planning mode |
-| `/schedule`, `/loop`, `/goal` (v2.1.139), `/autofix-pr` | Automation |
+| `/schedule`, `/loop`, `/goal` (v2.1.139), `/autofix-pr`, `/reload-skills` (v2.1.152), `/code-review --fix/--comment` (v2.1.147/.152) | Automation |
+| `/usage-credits` (renamed from `/extra-usage` in v2.1.144) | Usage credits |
 | `/resume`, `/branch`, `/teleport` | Session lifecycle |
 | `/model`, `/effort`, `/fast` | Model selection |
 | `/usage` (`/cost` and `/stats` are typing shortcuts since v2.1.118) | Usage metrics |
@@ -291,7 +292,8 @@ Sin equivalente en dotforge — gestionan la sesi&oacute;n de runtime:
 |---------|-----------|
 | `/compact`, `/context`, `/rewind` | Gesti&oacute;n de contexto |
 | `/plan`, `/ultraplan` | Modo planificaci&oacute;n |
-| `/schedule`, `/loop`, `/goal` (v2.1.139), `/autofix-pr` | Automatizaci&oacute;n |
+| `/schedule`, `/loop`, `/goal` (v2.1.139), `/autofix-pr`, `/reload-skills` (v2.1.152), `/code-review --fix/--comment` (v2.1.147/.152) | Automatizaci&oacute;n |
+| `/usage-credits` (renombrado desde `/extra-usage` en v2.1.144) | Cr&eacute;ditos de uso |
 | `/resume`, `/branch`, `/teleport` | Ciclo de vida de sesiones |
 | `/model`, `/effort`, `/fast` | Selecci&oacute;n de modelo |
 | `/usage` (`/cost` y `/stats` son atajos desde v2.1.118) | M&eacute;tricas de uso |

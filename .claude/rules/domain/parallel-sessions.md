@@ -2,7 +2,7 @@
 globs: "**/agents/*.md,**/rules/agents.md,**/CLAUDE.md"
 description: "Top-level session parallelism — worktrees, fork, teleport — distinct from subagent delegation"
 domain: claude-code-engineering
-last_verified: 2026-05-13
+last_verified: 2026-05-27
 ---
 
 # Parallel Sessions
@@ -35,6 +35,8 @@ Process-level isolation alongside the filesystem-level isolation of `--worktree`
 - `claude stop <id>` / `claude kill <id>`: stop a running session
 
 `claude agents` (v2.1.139+, Research Preview) opens the unified agent view showing every session (running/blocked/done). When stdin is piped, the older subagent-listing behavior is preserved.
+
+`claude agents --json` (v2.1.145+) emits live sessions as a JSON array for scripting (tmux-resurrect, custom status bars, session pickers). `/resume` supports background sessions since v2.1.144 — `--bg`-started sessions appear in the picker marked `bg`.
 
 Pick by isolation needed:
 - **Worktree** (`--worktree`): separate working tree, separate branch. Best for parallel features that touch the same files

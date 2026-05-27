@@ -2,7 +2,7 @@
 globs: "**/*.sh,**/settings.json"
 description: "Hook event payloads and per-event behavior details"
 domain: claude-code-engineering
-last_verified: 2026-05-13
+last_verified: 2026-05-27
 ---
 
 # Hook Event Details
@@ -12,7 +12,7 @@ last_verified: 2026-05-13
 - PostCompact command: `trigger` ("auto"/"manual") + `compact_summary` (full text)
 - PostCompact SDK: `compactType` + `messageCountBefore` + `messageCountAfter`
 - PreCompact: `compactType` + `messageCount` — **BLOCKABLE since v2.1.105** (exit 2 prevents compaction)
-- SessionStart `source`: "startup", "resume", "compact", "clear". dotforge wires three hooks here (v3.7.0+): `check-updates.sh` (version check), `session-restore.sh` (re-injects last-compact.md when source=compact), `session-startup.sh` (snapshot + drift detection on every other source — writes `.claude/session/last-startup.md` plus rotating `startup-history/<ISO>.md`, last 5)
+- SessionStart `source`: "startup", "resume", "compact", "clear". dotforge wires three hooks here (v3.7.0+): `check-updates.sh` (version check), `session-restore.sh` (re-injects last-compact.md when source=compact), `session-startup.sh` (snapshot + drift detection on every other source — writes `.claude/session/last-startup.md` plus rotating `startup-history/<ISO>.md`, last 5). **v2.1.152**: SessionStart hooks can return `hookSpecificOutput.reloadSkills: true` to trigger a same-session skill directory re-scan after installing new skills, and `hookSpecificOutput.sessionTitle: "..."` to set the session display title on startup/resume (extending the v2.1.94 UserPromptSubmit-only capability).
 - CwdChanged: fires on directory change, supports CLAUDE_ENV_FILE
 - FileChanged: fires on external file modification — use for auto-reload
 - InstructionsLoaded: fires when CLAUDE.md or `.claude/rules/*.md` loads. `load_reason`: `session_start` | `nested_traversal` | `path_glob_match` | `include` | `compact`. Observability-only, no decision control.
@@ -64,6 +64,18 @@ Standard output fields all hooks may return:
 - Stop hooks that return `decision: "block"` repeatedly were able to loop forever (block → retry → block). A cap was added: **8 consecutive blocks** terminate the turn with a warning
 - Override the cap via `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP=<n>` env var
 - Implication: blocks **must converge**. A Stop hook that gates on a flaky test should count attempts and let the turn pass after N retries instead of looping. Treat `decision: "block"` as a signal for "more work needed", not "force always"
+
+## Display events (v2.1.152+)
+
+- **MessageDisplay**: fires when an assistant message is about to be rendered to the user. Hook can transform the text (e.g. PII/secret redaction) or hide it entirely. First "display-time" event — distinct from all prior events which are control-flow
+
+## Stop / SubagentStop additional fields (v2.1.145+)
+
+Both Stop and SubagentStop hook inputs now include:
+- `background_tasks` — list of `claude --bg` sessions still running when the foreground turn stops
+- `session_crons` — list of `/schedule`-created crons active in this session
+
+Enables exit-time reporting of pending background work without external probing. `template/hooks/session-report.sh` reads both to emit `pending_bg_tasks` and `active_crons` counts in the JSON metrics file.
 
 ## MCP elicitation events (v2.1.76+)
 

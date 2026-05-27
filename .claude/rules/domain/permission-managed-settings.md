@@ -29,6 +29,7 @@ Companion to `permission-model.md`. Covers managed-scope governance, MCP server 
 - `enabledMcpjsonServers` / `disabledMcpjsonServers` — per-server allow/deny
 - `allowedMcpServers` / `deniedMcpServers` — managed-scope versions
 - `allowManagedMcpServersOnly` — managed-only MCP source
+- `allowAllClaudeAiMcps` (v2.1.149+) — when true, loads ALL claude.ai cloud MCP connectors alongside `managed-mcp.json` entries. Use when the security team curates internal MCP servers but wants ad-hoc claude.ai-managed connectors (Linear, Slack, Notion) without enumerating each
 - `alwaysLoad: true` (per-server, v2.1.121+) — tools skip tool-search deferral and stay always available. Costs context for fewer tool-search invocations. Use only when MCP tools are needed every turn
 - `workspace` reserved as MCP server name since v2.1.128 — projects with that name skipped with warning
 - MCP tools default to `passthrough` (always ask)

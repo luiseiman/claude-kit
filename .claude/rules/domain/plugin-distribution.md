@@ -31,6 +31,7 @@ For dotforge specifically: candidates to migrate are `practices/metrics.yml` (co
 - `allowedChannelPlugins` — restricts which plugins can listen on `--channels`
 - `allowManagedPermissionRulesOnly` — locks projects to managed-only permission rules
 - `pluginTrustMessage` — custom warning shown on plugin trust prompts
+- `pluginSuggestionMarketplaces` (v2.1.152+) — admins allowlist org marketplaces whose plugins may be suggested via the harness's context-aware tip prompts. Without it, all configured marketplaces are eligible to surface suggestions
 
 ## Reserved names
 

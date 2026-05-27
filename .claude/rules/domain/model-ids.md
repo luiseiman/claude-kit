@@ -2,7 +2,7 @@
 globs: "**/agents/*.md,**/CLAUDE.md"
 description: "Model IDs and agent defaults for Claude Code subagent instantiation"
 domain: claude-code
-last_verified: 2026-04-20
+last_verified: 2026-05-27
 ---
 
 # Model IDs (April 2026)
@@ -24,6 +24,13 @@ Five tiers: `low` < `medium` < `high` < `xhigh` < `max`. `xhigh` is Opus 4.7-exc
 - Consider `xhigh` (not `max`) for `security-auditor`/`architect` on complex tasks — deeper reasoning without the cost jump of max
 - Benchmark baselines computed before 2026-04-07 are no longer comparable
 - For deterministic transformations (rename, reformat) explicit `effort: low` is recommended
+
+## `/model` is per-session by default (v2.1.144+)
+
+- `/model <id>` changes the model **for the current session only**. Previously (pre-v2.1.144) it mutated `~/.claude/settings.json` so the choice persisted.
+- To set the persistent default: open the picker with `/model` (no args), select the model, press `d`
+- CI implication: prefer `--model <id>` flag on each `claude` invocation rather than expecting `/model` to leak across processes
+- Trading workflow implication: switch one bot session to Opus 4.7 for a high-stakes job without affecting the rest
 
 ## Fast mode (Opus toggle)
 

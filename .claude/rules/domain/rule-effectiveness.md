@@ -2,7 +2,7 @@
 globs: "**/rules/*.md,**/stacks/*/rules/*"
 description: "Rule design, glob patterns, and effectiveness measurement"
 domain: claude-code-engineering
-last_verified: 2026-05-05
+last_verified: 2026-05-27
 ---
 
 # Rule Effectiveness
@@ -18,6 +18,7 @@ last_verified: 2026-05-05
 | `context` | `inline`, `fork` | Execute inline or fork to subagent |
 | `agent` | agent type string | Sub-agent type when `context: fork` |
 | `allowed-tools` | tool name filter | Restrict available tools |
+| `disallowed-tools` | tool name filter | (v2.1.152+) Remove tools from the model while the skill/command is active. Companion to `allowed-tools`. Pattern for read-only analytical skills: `disallowed-tools: [Bash, Write, Edit]` |
 | `user-invocable` | boolean | Show as slash command |
 | `disable-model-invocation` | boolean | Skill only invocable by the user, not the model (v2.1.111+). Use for destructive or gated commands after v2.1.108 (model can self-invoke slash commands) |
 

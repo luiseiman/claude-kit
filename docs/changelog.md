@@ -4,6 +4,59 @@
 >
 > Historial de versiones. Las entradas usan español/inglés mixto según la evolución del proyecto. Los términos técnicos son universales.
 
+## v3.10.0 (2026-05-27)
+
+### `/forge watch` sync from Claude Code v2.1.144 → v2.1.152 (features)
+
+Builds on the v3.9.1 security patch with 14 upstream feature/UX practices from the same release window. Adds a new hook event (the first display-time event), a new frontmatter field, two new managed settings, one new slash command, plus several rename / UX semantic shifts that need documentation.
+
+#### New hook event
+
+- **MessageDisplay** (v2.1.152+) — first display-time hook event, lifecycle cadence #4 in the catalogue (was 3). Hook can transform or hide assistant message text as it is rendered. Use cases: PII/secret redaction, post-processing markdown, compliance overlays. Catalogue bumped 32+ → **34+**.
+
+#### Hook payload / output expansions
+
+- **SessionStart** (`hookSpecificOutput.reloadSkills: true` + `sessionTitle`, v2.1.152) — a hook that installs skills can request a same-session re-scan via `reloadSkills`; a SessionStart hook can set the session title (was UserPromptSubmit-only since v2.1.94).
+- **Stop / SubagentStop** (`background_tasks` + `session_crons` fields, v2.1.145) — exit-time visibility into `claude --bg` sessions still running and `/schedule` crons active in the session.
+- **`domain/hook-events.md`** + **`hook-architecture.md`** updated accordingly.
+- **`template/hooks/session-report.sh`** now reads stdin payload and emits `pending_bg_tasks` + `active_crons` in the JSON metrics file (defaults to 0 on older Claude Code without the fields).
+
+#### New frontmatter field
+
+- **`disallowed-tools`** (v2.1.152) for skills and slash commands. Companion to `allowed-tools`; removes tools from the model while the skill is active. Pattern for read-only analytical skills (audit, rule-check, diff): `disallowed-tools: [Bash, Write, Edit]`. Documented in `domain/rule-effectiveness.md` frontmatter table.
+
+#### Settings
+
+- **`autoMode` first-use opt-in consent removed** (v2.1.152) — auto mode now activates directly. `domain/auto-mode.md` updated.
+- **`allowAllClaudeAiMcps`** managed setting (v2.1.149) — load claude.ai cloud MCP connectors alongside `managed-mcp.json`. `domain/permission-managed-settings.md` row added.
+- **`pluginSuggestionMarketplaces`** managed setting (v2.1.152) — admins allowlist marketplaces for context-aware tip suggestions. `domain/plugin-distribution.md` row added.
+
+#### Slash commands
+
+- **`/code-review`** (v2.1.147 rename from `/simplify`; v2.1.152 added `--fix`) — `--comment` posts inline GitHub PR comments, `--fix` applies findings to working tree. `/simplify` now invokes `--fix`. Independent from dotforge's `code-reviewer` subagent — `.claude/rules/agents.md` clarifies when to use each.
+- **`/reload-skills`** (v2.1.152) — re-scan skill directories without restart. Pairs with the SessionStart `reloadSkills` hook field.
+- **`/extra-usage` → `/usage-credits`** (v2.1.144 rename; old name still works).
+- **`/model`** is per-session by default (v2.1.144) — was settings-mutating before. Press `d` in the picker to set persistent default. `domain/model-ids.md` UX section added.
+
+#### CLI
+
+- **`claude agents --json`** (v2.1.145) — live sessions as JSON for tmux-resurrect / status bars / pickers. `domain/parallel-sessions.md` + `cli-flags.md` updated.
+- **`/resume` supports background sessions** (v2.1.144) — `claude --bg`-started sessions appear in picker marked `bg`.
+
+#### Auth
+
+- **`ANTHROPIC_WORKSPACE_ID`** env var (v2.1.141, captured 2026-05-18) — scopes a token when the user's federation rule covers more than one workspace. Required for multi-workspace SAML/OIDC. `domain/auth.md` federation section added.
+
+#### Observability
+
+- **OTEL `claude_code.tool` spans** now carry `agent_id` / `parent_agent_id` (v2.1.145) — previously only on `llm_request` spans. Trace parenting fixed: background subagent spans nest under dispatching Agent tool span. `domain/agent-orchestration.md` OTEL section added.
+
+#### Practices lifecycle
+
+- 14 practices migrated inbox → active. Status: 4 `monitoring` (target concrete errors), 10 `informational` (general knowledge).
+- `practices/metrics.yml`: 14 new entries (92 practices tracked total).
+- Inbox now empty.
+
 ## v3.9.1 (2026-05-27)
 
 ### Upstream security fixes propagated (v2.1.145 → v2.1.149)

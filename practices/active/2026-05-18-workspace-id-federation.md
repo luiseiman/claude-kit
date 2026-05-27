@@ -4,10 +4,10 @@ title: ANTHROPIC_WORKSPACE_ID para scopear tokens en workload identity federatio
 source: https://code.claude.com/docs/en/changelog
 source_type: changelog
 discovered: 2026-05-18
-status: inbox
+status: active
 tags: [auth, federation, enterprise, claude-code-v2.1.141, needs-enterprise-federation]
 tested_in: null
-incorporated_in: []
+incorporated_in: ["docs/changelog.md#v3100"]
 replaced_by: null
 ---
 

@@ -869,3 +869,158 @@ practices:
     status: monitoring
     projects_applied: 0
     last_checked: 2026-05-27
+
+  # v3.10.0 — 2026-05-27 watch sync (v2.1.144 → v2.1.152 features)
+  - id: practice-2026-05-27-messagedisplay-hook-event
+    error_targeted: null
+    error_type: null
+    activated: 2026-05-27
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: 2026-05-27
+
+  - id: practice-2026-05-27-sessionstart-reloadskills-sessiontitle
+    error_targeted: null
+    error_type: null
+    activated: 2026-05-27
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: 2026-05-27
+
+  - id: practice-2026-05-27-stop-hook-background-tasks-crons
+    error_targeted: "session-report.sh has no visibility into background work surviving the turn — undercount of session activity in metrics"
+    error_type: config
+    activated: 2026-05-27
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: monitoring
+    projects_applied: 1
+    last_checked: 2026-05-27
+
+  - id: practice-2026-05-27-disallowed-tools-frontmatter
+    error_targeted: "read-only analytical skills accidentally gain Bash/Write capability and execute remediation when their scope was supposed to be report-only"
+    error_type: config
+    activated: 2026-05-27
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: monitoring
+    projects_applied: 0
+    last_checked: 2026-05-27
+
+  - id: practice-2026-05-27-auto-mode-no-opt-in-consent
+    error_targeted: null
+    error_type: null
+    activated: 2026-05-27
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: 2026-05-27
+
+  - id: practice-2026-05-27-code-review-slash-command
+    error_targeted: null
+    error_type: null
+    activated: 2026-05-27
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: 2026-05-27
+
+  - id: practice-2026-05-27-claude-agents-json
+    error_targeted: null
+    error_type: null
+    activated: 2026-05-27
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: 2026-05-27
+
+  - id: practice-2026-05-27-allowallclaudeaimcps-managed
+    error_targeted: null
+    error_type: null
+    activated: 2026-05-27
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: 2026-05-27
+
+  - id: practice-2026-05-27-plugin-suggestion-marketplaces
+    error_targeted: null
+    error_type: null
+    activated: 2026-05-27
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: 2026-05-27
+
+  - id: practice-2026-05-27-reload-skills-command
+    error_targeted: null
+    error_type: null
+    activated: 2026-05-27
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: 2026-05-27
+
+  - id: practice-2026-05-27-model-per-session-default
+    error_targeted: "CI scripts assume /model leaks across processes; per-session default change in v2.1.144 silently invalidates pipelines"
+    error_type: config
+    activated: 2026-05-27
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: monitoring
+    projects_applied: 0
+    last_checked: 2026-05-27
+
+  - id: practice-2026-05-27-extra-usage-renamed-usage-credits
+    error_targeted: null
+    error_type: null
+    activated: 2026-05-27
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: 2026-05-27
+
+  - id: practice-2026-05-27-otel-tool-spans-agent-id
+    error_targeted: null
+    error_type: null
+    activated: 2026-05-27
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: 2026-05-27
+
+  - id: practice-2026-05-18-workspace-id-federation
+    error_targeted: null
+    error_type: null
+    activated: 2026-05-27
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: 2026-05-27

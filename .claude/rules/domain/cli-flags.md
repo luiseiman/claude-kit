@@ -2,7 +2,7 @@
 globs: "**/CLAUDE.md,**/agents/*.md,**/skills/**/SKILL.md,**/scripts/**/*.sh,**/.github/workflows/*.yml"
 description: "Claude Code CLI flags and subcommands — automation, interactive, headless"
 domain: claude-code-engineering
-last_verified: 2026-05-13
+last_verified: 2026-05-27
 ---
 
 # Claude Code CLI Flags
@@ -54,6 +54,7 @@ Reference for non-paralellism CLI surface. For session-parallelism flags see `pa
 - `claude agents`: opens agent view (v2.1.139+); when piped, lists configured subagents grouped by source. Accepts launcher flags for dispatched background sessions (v2.1.141-143):
   - `--cwd <path>` (v2.1.141) — scope the agent list / dispatch to a directory
   - `--add-dir`, `--settings`, `--mcp-config`, `--plugin-dir`, `--permission-mode`, `--model`, `--effort`, `--dangerously-skip-permissions` (v2.1.142) — same surface as interactive `claude`, applies to sessions dispatched FROM the view (not those already running)
+  - `--json` (v2.1.145) — emit live sessions as JSON array for scripting (tmux-resurrect, status bars, session pickers)
   - v2.1.143: `/bg` and ←-detach preserve `--mcp-config`, `--settings`, `--add-dir`, `--plugin-dir`, `--strict-mcp-config`, `--fallback-model`, `--allow-dangerously-skip-permissions` when backgrounding interactive sessions. Bg sessions dispatched from `claude agents` now honor `permissions.defaultMode` from settings.json (previously overrode to auto)
 - `claude attach <id>` / `logs <id>` / `respawn <id>` / `rm <id>` / `stop <id>`: background session lifecycle (v2.1.139+)
 - `claude auto-mode (defaults|config)`: print built-in classifier rules / effective config as JSON

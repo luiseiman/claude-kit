@@ -2,7 +2,7 @@
 globs: "**/settings.json,**/settings.local.json"
 description: "Auto mode classifier, permission stripping, tool concurrency"
 domain: claude-code-engineering
-last_verified: 2026-05-13
+last_verified: 2026-05-27
 ---
 
 # Auto Mode & Tool Safety
@@ -13,7 +13,7 @@ last_verified: 2026-05-13
 - Evaluates each tool call for safety before allowing
 - Fallback to prompt: 3 consecutive blocks OR 20 total blocks in session
 - Subagent evaluation: auto mode applies to subagent tool calls too
-- Enable: `permissions.defaultMode: "auto"` in settings.json (research-preview `--enable-auto-mode` gate removed in v2.1.111 — no CLI flag needed)
+- Enable: `permissions.defaultMode: "auto"` in settings.json (research-preview `--enable-auto-mode` gate removed in v2.1.111; first-use opt-in consent prompt removed in v2.1.152 — auto mode now activates directly)
 - `--permission-mode auto` to start in auto mode from CLI
 - Disable (managed): `permissions.disableAutoMode: "disable"`
 - **Max subscribers on Opus 4.7**: auto mode available as a tier gate (v2.1.111+) — no opt-in beyond the pricing plan

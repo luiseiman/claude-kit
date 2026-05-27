@@ -14,7 +14,7 @@ Before starting any task, evaluate:
 3. **Code changes + tests needed** → delegate to `implementer`
 4. **Security/vulnerability concern** → delegate to `security-auditor`
 5. **Multi-component refactor (>3 files, >2 concerns)** → evaluate Agent Teams
-6. **Code review before merge** → delegate to `code-reviewer`
+6. **Code review before merge** → delegate to `code-reviewer` subagent (structured chain-of-review during the change) OR invoke the built-in `/code-review` slash command (v2.1.147+ ad-hoc end-of-PR pass; `--comment` posts inline GitHub PR comments, `--fix` applies findings to working tree). The two are independent — subagent is for in-flight review with memory, slash command is for one-shot review-and-comment
 7. **Architecture decision or tradeoff analysis** → delegate to `architect`
 8. **Session analysis / pattern detection / /forge insights** → delegate to `session-reviewer`
 

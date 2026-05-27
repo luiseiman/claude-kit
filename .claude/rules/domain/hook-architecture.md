@@ -2,19 +2,22 @@
 globs: "**/*.sh,**/settings.json,**/settings.json.partial"
 description: "Hook system design patterns and safety requirements"
 domain: claude-code-engineering
-last_verified: 2026-05-13
+last_verified: 2026-05-27
 ---
 
 # Hook Architecture
 
-## Events (32+ total, verified 2026-05-05 — code.claude.com/docs/en/hooks)
+## Events (34+ total, verified 2026-05-27 — code.claude.com/docs/en/hooks)
 
-Three lifecycle cadences:
+Four lifecycle cadences:
 
 **Session-level** (once per session): SessionStart, SessionEnd, InstructionsLoaded, Setup
 **Turn-level** (once per user prompt): UserPromptSubmit, UserPromptExpansion, Stop, StopFailure
 **Tool-loop** (every tool call): PreToolUse, PostToolUse, PostToolUseFailure, PostToolBatch, PermissionRequest, PermissionDenied
+**Display-level** (v2.1.152+, on each assistant message render): MessageDisplay
 **Async/side**: Notification, SubagentStart, SubagentStop, TaskCreated, TaskCompleted, TeammateIdle, ConfigChange, CwdChanged, FileChanged, WorktreeCreate, WorktreeRemove, PreCompact, PostCompact, Elicitation, ElicitationResult
+
+`MessageDisplay` (v2.1.152+) is the first display-time event. It fires when assistant text is about to be rendered to the user; the hook can transform or hide the text. Use for output redaction (PII, secrets, internal IDs that leaked into tool output) or post-processing. Distinct from all prior events which are control-flow.
 
 `Setup` fires for `--init-only` / `--maintenance` runs with matchers `init` and `maintenance` respectively. Use for env-var provisioning, credential rotation, prerequisite checks BEFORE the session starts. Distinct from `SessionStart` which fires on every session — `Setup` only fires when explicitly requested.
 

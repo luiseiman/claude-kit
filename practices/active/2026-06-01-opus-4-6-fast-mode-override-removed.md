@@ -4,10 +4,10 @@ title: CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE removed (v2.1.154 deprecated, dro
 source: "official changelog"
 source_type: upstream
 discovered: 2026-06-01
-status: inbox
+status: active
 tags: [models, deprecation, fast-mode, opus, urgent]
 tested_in: null
-incorporated_in: []
+incorporated_in: [".claude/rules/domain/model-ids.md", "docs/changelog.md#v3101"]
 replaced_by: null
 ---
 

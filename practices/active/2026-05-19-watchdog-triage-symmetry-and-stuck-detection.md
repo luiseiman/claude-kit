@@ -4,10 +4,10 @@ title: Watchdog triage debe ser simétrico en suppression y stuck-detection requ
 source: "own experience"
 source_type: experience
 discovered: 2026-05-19
-status: inbox
+status: active
 tags: [monitoring, alerting, watchdog, false-positives, sre, observability, suppression]
 tested_in: vps-control
-incorporated_in: []
+incorporated_in: ["docs/monitoring-patterns.md", "docs/changelog.md#v3101"]
 replaced_by: null
 ---
 

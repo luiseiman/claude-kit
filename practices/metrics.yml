@@ -1024,3 +1024,69 @@ practices:
     status: informational
     projects_applied: 0
     last_checked: 2026-05-27
+
+  - id: practice-2026-06-01-opus-4-6-fast-mode-override-removed
+    error_targeted: "stale CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE in user env after 2026-06-01 cliff"
+    error_type: config
+    activated: 2026-06-01
+    recurrence_checks: 0
+    recurrence_target: 3
+    recurred: false
+    status: monitoring
+    projects_applied: 0
+    last_checked: 2026-06-01
+
+  - id: practice-2026-06-01-opus-4-8-ga
+    error_targeted: null
+    error_type: null
+    activated: 2026-06-01
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: 2026-06-01
+
+  - id: practice-2026-06-01-lean-system-prompt-default
+    error_targeted: "claude -p in scripts/CI carrying 100k+ tokens system prompt unnecessarily"
+    error_type: config
+    activated: 2026-06-01
+    recurrence_checks: 1
+    recurrence_target: 5
+    recurred: true
+    status: monitoring
+    projects_applied: 1
+    last_checked: 2026-06-01
+
+  - id: practice-2026-06-01-plugins-skills-auto-load
+    error_targeted: null
+    error_type: null
+    activated: 2026-06-01
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: 2026-06-01
+
+  - id: practice-2026-06-01-workflows-fifth-primitive
+    error_targeted: null
+    error_type: null
+    activated: null
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: evaluating
+    projects_applied: 0
+    last_checked: 2026-06-01
+
+  - id: practice-2026-05-19-watchdog-triage-symmetry-and-stuck-detection
+    error_targeted: "false positives in scheduled-service monitoring; signature flapping breaking throttle"
+    error_type: logic
+    activated: 2026-06-01
+    recurrence_checks: 1
+    recurrence_target: 3
+    recurred: true
+    status: monitoring
+    projects_applied: 1
+    last_checked: 2026-06-01

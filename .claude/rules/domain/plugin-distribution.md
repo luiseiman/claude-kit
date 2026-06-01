@@ -2,7 +2,7 @@
 globs: "**/.claude-plugin/**,**/plugin.json,**/install.sh,**/.mcp.json"
 description: "Plugin distribution: persistent state, seed dirs, marketplace policy, reserved names"
 domain: claude-code-engineering
-last_verified: 2026-05-05
+last_verified: 2026-06-01
 ---
 
 # Plugin Distribution
@@ -43,11 +43,15 @@ For dotforge specifically: candidates to migrate are `practices/metrics.yml` (co
 - `plugin uninstall --prune` — cascades dependency cleanup
 - `--plugin-dir` accepts `.zip` archives (v2.1.128+) — alternative distribution path
 
+## Plugin from `.claude/skills/` (v2.1.157+)
+
+Plugins dropped in `.claude/skills/<name>/` **auto-load without marketplace registration**. Scaffold a new one with `claude plugin init <name>` (writes a minimal `plugin.json` + `SKILL.md` skeleton). Collapses the boundary between "skill" (project-local, no distribution) and "plugin" (distributable artifact) — even local-only experiments can be plugins now, because the marketplace metadata is no longer required to load them.
+
 ## When to plugin vs `.claude/`
 
 | Need | Use |
 |------|-----|
-| One-project customization, quick experiment | `.claude/` standalone |
-| Shared with team, versioned, namespaced skills | Plugin |
-| Enterprise governance (marketplace allowlist) | Plugin via managed settings |
+| One-project customization, quick experiment | `.claude/skills/<name>/` plugin scaffolded via `claude plugin init` — auto-loads, no marketplace |
+| Shared with team, versioned, namespaced skills | Plugin via marketplace (github/git/url) |
+| Enterprise governance (marketplace allowlist) | Plugin via managed settings + `pluginSuggestionMarketplaces` |
 | State that must survive updates | Plugin + `${CLAUDE_PLUGIN_DATA}` |

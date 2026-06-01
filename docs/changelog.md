@@ -4,6 +4,40 @@
 >
 > Historial de versiones. Las entradas usan español/inglés mixto según la evolución del proyecto. Los términos técnicos son universales.
 
+## v3.10.1 (2026-06-01)
+
+### `/forge update` partial sync from Claude Code v2.1.153 → v2.1.158 + watchdog field practice
+
+Processes 6 inbox practices: 5 upstream from the v2.1.153–v2.1.158 release window past v3.10.0's sync cutoff, plus 1 field practice from `vps-control`. 4 incorporated to domain rules, 1 to a new cross-cutting doc, 1 stubbed pending official docs.
+
+#### Domain rules
+
+- **`domain/model-ids.md`** — Opus 4.8 GA (v2.1.154): table top row now `claude-opus-4-8`, Opus 4.7 demoted to legacy-pin note for benchmark reproducibility. `xhigh` effort tier annotated as Opus-4.7-and-4.8-exclusive. Fast mode advisory updated: Opus 4.8 fast = 2x cost / 2.5x speed (more aggressive than 4.7). **`CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE` documented as removed 2026-06-01** (was deprecated in v2.1.154); the pin-to-4.6 escape hatch no longer exists.
+- **`domain/prompting-patterns.md`** — new "Headless invocation cost profile (v2.1.154+)" section documenting the v2.1.154 lean-system-prompt default (Opus 4.8 / Sonnet 4.6 / Haiku 4.5; Opus 4.7 still full) and the manual lean-invocation pattern (`--system-prompt + --disable-slash-commands + --strict-mcp-config + cd /tmp`). Carries `vps-control` field measurement as evidence: 117k → 31k cache_creation → 0 on cache hit, 12-37x cost reduction.
+- **`domain/plugin-distribution.md`** — new "Plugin from `.claude/skills/` (v2.1.157+)" section: plugins in that path auto-load without marketplace, `claude plugin init <name>` scaffolds the minimal `plugin.json` + `SKILL.md`. "When to plugin vs `.claude/`" table updated — first row now recommends the scaffolded plugin shape over standalone `.claude/skills` for one-project experiments. Threshold to plugin lowered.
+- **`domain/workflow-automation.md`** — **/workflows added as the 5th primitive (v2.1.154+)**, alongside /goal /loop /schedule /batch. Stub coverage: positioning (orchestrates tens-to-hundreds of agents, dynamic shape vs Agent Teams' handcrafted ≤4), v2.1.158 keyword-trigger setting note, and explicit **TODO** flag for official docs. Anti-patterns extended.
+
+#### New cross-cutting doc
+
+- **`docs/monitoring-patterns.md`** (new) — Five field-tested patterns for any rules-based monitoring system: (1) suppression symmetry across all checks of a scheduled service, (2) stuck-detection requires backlog evidence (lag + pending > 0), (3) throttle by sub-issue not aggregate hash, (4) on-demand services need a distinct schedule class, (5) don't auto-restart what requires human interaction. Originating practice: `vps-control` watchdog incident series May 2026.
+
+#### Deferred
+
+- **`/workflows`** practice (#workflows-fifth-primitive) marked `status: evaluating`, not `active`. Stub merged but full coverage pending an official docs fetch for the declarative/dynamic API surface and `settings.json` schema. Re-process in next `/forge update` when docs are read.
+
+#### Practices lifecycle
+
+- 4 inbox → active (opus-4-6-fast-mode-override-removed, opus-4-8-ga, lean-system-prompt-default, plugins-skills-auto-load)
+- 1 inbox → active (watchdog-triage-symmetry, own-experience)
+- 1 inbox → evaluating (workflows-fifth-primitive)
+- `practices/metrics.yml`: 6 new entries (98 practices tracked total). 3 with `status: monitoring` (target concrete errors), 2 `informational`, 1 `evaluating`.
+- Inbox empty.
+
+#### Propagation
+
+- Domain rules and `docs/` are picked up by `/forge sync` on managed projects. The Opus-4.6-fast-mode-override removal note is urgent for any project pinning the env var in CI — sync now.
+- No `template/` or `stacks/*/` changes in this release — pure rules + docs delta. Managed projects only need a docs/rules refresh.
+
 ## v3.10.0 (2026-05-27)
 
 ### `/forge watch` sync from Claude Code v2.1.144 → v2.1.152 (features)

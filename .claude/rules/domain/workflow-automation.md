@@ -1,13 +1,13 @@
 ---
 globs: "**/CLAUDE.md,**/skills/loop/**,**/skills/schedule/**,**/rules/_common.md"
-description: "When to reach for /loop, /schedule, /batch — temporal workflow primitives"
+description: "When to reach for /goal, /loop, /schedule, /batch, /workflows — temporal and orchestration primitives"
 domain: claude-code-engineering
-last_verified: 2026-05-13
+last_verified: 2026-06-01
 ---
 
 # Workflow Automation Primitives
 
-Four workflow primitives cover temporal orchestration: `/goal` (condition-driven persistence), `/loop` (polling), `/schedule` (cron triggers), `/batch` (fan-out). Pick by the problem shape, not by familiarity.
+Five primitives cover temporal and multi-agent orchestration: `/goal` (condition-driven persistence), `/loop` (polling), `/schedule` (cron triggers), `/batch` (fan-out over independent files), `/workflows` (dynamic multi-agent orchestration, v2.1.154+). Pick by the problem shape, not by familiarity.
 
 ## `/goal` — condition-driven persistence (v2.1.139+)
 
@@ -38,6 +38,13 @@ Four workflow primitives cover temporal orchestration: `/goal` (condition-driven
 - When blast radius is wide, stage into a branch first — batch failures are harder to unwind than sequential
 - If changes are <10, sequential is usually faster than `/batch` setup overhead
 
+## `/workflows` — dynamic multi-agent orchestration (v2.1.154+)
+
+- Use for: orchestrating **tens to hundreds of agents** with inter-dependencies, multi-stage pipelines, or fan-out-then-merge shapes that `/batch` can't express
+- Distinct from Agent Teams (handcrafted, ≤4 teammates, declared upfront): `/workflows` is dynamic — the workflow shape is decided at runtime, not pre-declared
+- v2.1.158 added a `"Workflow keyword trigger"` settings.json option to suppress accidental activation when the literal word "workflow" appears in a prompt
+- **TODO**: read official docs to document the declarative vs dynamic API surface, settings schema, and concrete examples. This primitive is stubbed here to flag its existence; full coverage pending
+
 ## Routines vs `/schedule` vs Desktop scheduled tasks
 
 Three distinct cron-like primitives — don't confuse them:
@@ -52,3 +59,5 @@ Three distinct cron-like primitives — don't confuse them:
 - Hand-coded cron in a SessionStart hook → use `/schedule`
 - Looping over files with Edit tool calls for a mechanical rename → use `/batch`
 - `/loop` without a stop condition → will run until the session dies or the loop burns the context
+- `/batch` for fan-out where teammates need to coordinate or share state → use `/workflows`
+- Spawning 20+ subagents from a Lead agent — exceeds Agent Teams' "max 3-4 teammates" guidance → use `/workflows`

@@ -4,10 +4,10 @@ title: Plugins in .claude/skills/ auto-load without marketplace + claude plugin 
 source: "official changelog"
 source_type: upstream
 discovered: 2026-06-01
-status: inbox
+status: active
 tags: [plugins, skills, distribution, marketplace, upstream]
 tested_in: null
-incorporated_in: []
+incorporated_in: [".claude/rules/domain/plugin-distribution.md", "docs/changelog.md#v3101"]
 replaced_by: null
 ---
 

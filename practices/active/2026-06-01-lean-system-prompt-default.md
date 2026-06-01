@@ -4,10 +4,10 @@ title: Lean system prompt now default (v2.1.154) except Haiku/Sonnet/Opus 4.7
 source: "official changelog + own experience"
 source_type: upstream
 discovered: 2026-06-01
-status: inbox
+status: active
 tags: [prompting, system-prompt, headless, cost, performance, upstream]
 tested_in: vps-control
-incorporated_in: []
+incorporated_in: [".claude/rules/domain/prompting-patterns.md", "docs/changelog.md#v3101"]
 replaced_by: null
 ---
 

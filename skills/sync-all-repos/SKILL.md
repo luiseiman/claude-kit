@@ -54,88 +54,224 @@ Skip silently:
 Skip with note (reported under "Ignored" in the final summary):
 - Repos with a `.dotforge-sync-ignore` file at root. The first line of that file is shown as the reason. Use this for archived projects, vendored repos, or any GitHub-backed repo you deliberately don't want auto-synced. The marker is in the project's own working tree — version-controlled by that project, not by dotforge.
 
-## Step 2: Classify each repo
+## Step 2: Classify each repo (with timeout + parallel)
 
-For each discovered repo, gather state (all read-only — safe to run in parallel):
+**Critical**: wrap every git network operation (`fetch`) and tree-scanning operation (`status`) in a timeout. Without this, a single hung repo (DNS lag, large worktree, stale lock) blocks the whole sync. Process repos in parallel for speed.
+
+Helper to detect the right timeout binary (macOS ships `gtimeout` via coreutils; Linux ships `timeout`):
 
 ```bash
-cd "$repo"
-BRANCH=$(git branch --show-current)
-DIRTY=$(git status --porcelain | wc -l | tr -d ' ')
-git fetch origin --quiet 2>/dev/null || FETCH_FAIL=1
-BEHIND=$(git rev-list --count HEAD..@{u} 2>/dev/null || echo "?")
-AHEAD=$(git rev-list --count @{u}..HEAD 2>/dev/null || echo "?")
-LAST_COMMIT=$(git log -1 --format='%h %s' 2>/dev/null)
+if command -v gtimeout >/dev/null 2>&1; then T=gtimeout
+elif command -v timeout >/dev/null 2>&1; then T=timeout
+else
+  # Fallback for systems without either — pure-bash timeout
+  T() {
+    local secs=$1; shift
+    ( "$@" ) & local pid=$!
+    ( sleep "$secs"; kill -TERM "$pid" 2>/dev/null ) & local watcher=$!
+    wait "$pid" 2>/dev/null; local rc=$?
+    kill "$watcher" 2>/dev/null
+    return $rc
+  }
+fi
 ```
 
-Classification table:
+Use `${T} 30 git fetch ...` for every potentially-slow git call. Recommended timeouts:
+- `git fetch`: 30s (network)
+- `git status --porcelain`: 20s (large worktrees)
+- `git rev-list --count`: 5s (cheap, just in case)
 
-| State | Trigger | Action |
-|-------|---------|--------|
-| `unreachable` | `FETCH_FAIL` set | Skip with warning. GitHub down or no network. Don't fail the rest. |
-| `non-main` | `BRANCH` is not `main`/`master` | Report only. User may be on a feature branch deliberately. |
-| `dirty` | `DIRTY > 0` | Report with branch + `git diff --stat` + last commit. **NO automatic action.** Defer to Claude. |
-| `in-sync` | `DIRTY==0 && BEHIND==0 && AHEAD==0` | No-op. Report as clean. |
-| `behind` | `DIRTY==0 && BEHIND>0 && AHEAD==0` | Auto: `git pull --rebase` |
-| `ahead` | `DIRTY==0 && BEHIND==0 && AHEAD>0` | Auto: `git push` |
-| `diverged` | `DIRTY==0 && BEHIND>0 && AHEAD>0` | Auto: `git pull --rebase` then `git push`. If rebase fails, `git rebase --abort` and report. |
+### Per-repo classification function
+
+Run as a subshell so a single hung repo can't poison shared state, and each invocation writes its result to a unique temp file (avoids interleaved stdout from parallel runs):
+
+```bash
+classify_one() {
+  local repo=$1 outdir=$2
+  local out="$outdir/$(echo "$repo" | tr '/' '_').out"
+  local name=$(basename "$repo")
+
+  local branch dirty fetch_rc behind ahead last
+  branch=$(git -C "$repo" branch --show-current 2>/dev/null)
+  branch=${branch:-?}
+
+  if ! ${T} 20 git -C "$repo" status --porcelain >/dev/null 2>&1; then
+    printf '%s|stalled|%s|status timeout\n' "$repo" "$branch" > "$out"; return
+  fi
+  dirty=$(${T} 20 git -C "$repo" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+
+  if ! ${T} 30 git -C "$repo" fetch origin --quiet 2>/dev/null; then
+    printf '%s|unreachable|%s|fetch failed or timeout\n' "$repo" "$branch" > "$out"; return
+  fi
+
+  behind=$(${T} 5 git -C "$repo" rev-list --count HEAD..@{u} 2>/dev/null || echo 0)
+  ahead=$(${T} 5 git -C "$repo" rev-list --count @{u}..HEAD 2>/dev/null || echo 0)
+  last=$(${T} 5 git -C "$repo" log -1 --format='%h %s' 2>/dev/null)
+
+  local state detail
+  if [[ "$dirty" -gt 0 ]]; then
+    state=dirty; detail="${dirty} files; ${behind}↓/${ahead}↑"
+  elif [[ "$branch" != "main" && "$branch" != "master" ]]; then
+    state=non-main; detail="${behind}↓/${ahead}↑"
+  elif [[ "$behind" -eq 0 && "$ahead" -eq 0 ]]; then
+    state=in-sync; detail="—"
+  elif [[ "$behind" -gt 0 && "$ahead" -eq 0 ]]; then
+    state=behind; detail="${behind} commits"
+  elif [[ "$behind" -eq 0 && "$ahead" -gt 0 ]]; then
+    state=ahead; detail="${ahead} commits"
+  else
+    state=diverged; detail="${behind}↓/${ahead}↑"
+  fi
+  printf '%s|%s|%s|%s|%s\n' "$repo" "$state" "$branch" "$detail" "$last" > "$out"
+}
+export -f classify_one
+export T
+```
+
+### Parallel execution
+
+**Critical**: paths can contain spaces (e.g., `~/Documents/jira nbch/cds-dashboard`). Always pipe **null-delimited** input to `xargs -0` — newline-delimited splits on whitespace and corrupts paths with spaces.
+
+```bash
+OUTDIR=$(mktemp -d)
+# REPOS array comes from Step 1 (filtered, github-only, not ignored)
+printf '%s\0' "${REPOS[@]}" | \
+  xargs -0 -n 1 -P 8 -I{} bash -c 'classify_one "$1" "$2"' _ {} "$OUTDIR"
+
+# Collect results — sort alphabetically for stable output
+RESULTS=$(cat "$OUTDIR"/*.out 2>/dev/null | sort)
+rm -rf "$OUTDIR"
+```
+
+The `-P 8` runs up to 8 repos concurrently. Adjust `-P` based on the machine (Mac M-series: 8; VPS Oracle ARM: 4 to leave headroom). On a 15-repo workload, parallel finishes in ~30-60s (Mac M, mixed cold/warm caches) vs 3+ min sequential.
+
+### State table
+
+| State | Trigger | Action in Step 3 |
+|-------|---------|------------------|
+| `unreachable` | fetch timeout or fail | Skip with warning. Don't fail the rest. |
+| `stalled` | status timeout | Skip with warning. Repo has a huge worktree or stuck git lock. |
+| `non-main` | `branch` not main/master | Report only. User may be on a feature branch deliberately. |
+| `dirty` | `dirty > 0` | Report with branch + `git diff --stat` + last commit. **NO automatic action.** Defer to Claude. |
+| `in-sync` | clean + main + 0/0 | No-op. |
+| `behind` | clean + main + N↓/0↑ | Auto: `${T} 60 git pull --rebase` |
+| `ahead` | clean + main + 0↓/M↑ | Auto: `${T} 60 git push` |
+| `diverged` | clean + main + N↓/M↑ | Auto: `${T} 60 git pull --rebase` then push. If rebase fails, `git rebase --abort` and report. |
 | `conflict` | rebase failed | Already aborted in `diverged` flow. Report and let Claude decide. |
 
-## Step 3: Execute auto-actions
+## Step 3: Execute auto-actions (also parallel + timed)
 
-For each repo classified as `behind`, `ahead`, or `diverged`, execute the action.
+For each repo classified as `behind`, `ahead`, or `diverged`, run the action with timeout. Pattern mirrors Step 2: subshell per repo, write result to a tempfile, parallelize via xargs, collect at the end.
 
 ```bash
-# behind
-git -C "$repo" pull --rebase --quiet
+act_one() {
+  local repo=$1 state=$2 outdir=$3
+  local out="$outdir/$(echo "$repo" | tr '/' '_').out"
+  case "$state" in
+    behind)
+      if ${T} 60 git -C "$repo" pull --rebase --quiet 2>&1; then
+        echo "$repo|pulled" > "$out"
+      else
+        echo "$repo|pull-failed" > "$out"
+      fi ;;
+    ahead)
+      if ${T} 60 git -C "$repo" push --quiet 2>&1; then
+        echo "$repo|pushed" > "$out"
+      else
+        echo "$repo|push-failed" > "$out"
+      fi ;;
+    diverged)
+      if ${T} 60 git -C "$repo" pull --rebase --quiet 2>&1; then
+        if ${T} 60 git -C "$repo" push --quiet 2>&1; then
+          echo "$repo|reconciled" > "$out"
+        else
+          echo "$repo|pull-ok-push-failed" > "$out"
+        fi
+      else
+        git -C "$repo" rebase --abort 2>/dev/null
+        echo "$repo|rebase-conflict" > "$out"
+      fi ;;
+  esac
+}
+export -f act_one
 
-# ahead
-git -C "$repo" push --quiet
+# Build action list from Step 2 RESULTS, filter to actionable states
+ACTION_LIST=$(echo "$RESULTS" | awk -F'|' '$2 ~ /^(behind|ahead|diverged)$/ {print $1"|"$2}')
+ACTOUT=$(mktemp -d)
+# Null-delimited to survive paths with spaces
+printf '%s\0' $ACTION_LIST | xargs -0 -n 1 -P 8 -I{} bash -c '
+  IFS="|" read -r repo state <<< "$1"
+  act_one "$repo" "$state" "$2"
+' _ {} "$ACTOUT"
 
-# diverged
-git -C "$repo" pull --rebase --quiet || git -C "$repo" rebase --abort
-[ rebase succeeded ] && git -C "$repo" push --quiet
+ACTIONS=$(cat "$ACTOUT"/*.out 2>/dev/null | sort)
+rm -rf "$ACTOUT"
 ```
 
-Capture exit code per repo. Don't stop the loop on failure — collect all results and report at the end.
+If a `push` fails (typically because someone else pushed first), that repo flips to "diverged" — you'd re-run sync-all to reconcile. Don't auto-retry within a single run.
 
 ## Step 4: Build structured report
 
-Emit a markdown table summarizing every repo touched:
+Two-section output: a one-line discovery summary + the per-state breakdown with aligned columns.
+
+### Header — one-line discovery summary
 
 ```
-═══ SYNC-ALL RESULTS ═══
-
-Pulled (N):
-  - <repo> (was behind by N commits)
-
-Pushed (M):
-  - <repo> (was ahead by N commits)
-
-Diverged + reconciled (K):
-  - <repo> (pulled N, pushed M)
-
-In-sync (J):
-  - <repo>, <repo>, ...
-
-Dirty — DEFERRED to Claude (X):
-  - <repo>
-    branch: <branch>
-    last commit: <hash> <msg>
-    changes: <diff --stat first 3 lines>
-
-Non-main branches — skipped (Y):
-  - <repo> on <branch>
-
-Conflicts — manual intervention (Z):
-  - <repo>: rebase aborted; pull and push diverged manually
-
-Unreachable (W):
-  - <repo>: fetch failed (GitHub or network)
-
-Ignored (V):
-  - <repo>: <reason from .dotforge-sync-ignore>
+═══ SYNC-ALL: <N> repos discovered (<M> GitHub-backed, <K> ignored, <S> skipped non-github) ═══
 ```
+
+### Body — categorical breakdown
+
+Use a fixed-width table format (40-char repo column + 14-char state + 16-char branch + rest for detail). Stable column widths across categories make it scannable.
+
+```
+STATE         REPOS                                   DETAIL
+─────         ─────                                   ──────
+
+✓ Pulled (N)
+                <repo>                                was behind by N
+                <repo>                                was behind by M
+
+✓ Pushed (M)
+                <repo>                                was ahead by N
+
+✓ Reconciled (K)
+                <repo>                                pulled N, pushed M
+
+= In-sync (J)
+                <repo>, <repo>, <repo>                (compact list)
+
+⚠ Dirty — DEFERRED to Claude (X)
+                <repo> [<branch>]                     <D> files; <B>↓/<A>↑
+                  last: <hash> <subject>
+                  diffstat:
+                    <file1>: +X -Y
+                    <file2>: +X -Y
+                    (… N more)
+
+⚠ Non-main — skipped (Y)
+                <repo>                                on <branch>; <B>↓/<A>↑
+
+⚠ Conflicts — manual intervention (Z)
+                <repo>                                rebase aborted, diverged remained
+
+✗ Unreachable (W)
+                <repo>                                fetch timeout/failed
+
+✗ Stalled (T)
+                <repo>                                git status hung — repo may be corrupt or worktree huge
+
+⊘ Ignored (V)
+                <repo>                                <reason from .dotforge-sync-ignore>
+```
+
+### Counter line at the end
+
+```
+═══ TOTAL: pulled=N pushed=M reconciled=K in-sync=J dirty=X non-main=Y conflicts=Z unreachable=W stalled=T ignored=V ═══
+```
+
+Categories with count 0 are omitted from the body but still appear in the counter line for completeness.
 
 ## Step 5: Claude resolves dirty cases
 

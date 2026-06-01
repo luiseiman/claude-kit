@@ -31,15 +31,28 @@ For each candidate directory at depth ≤2 with a `.git/` subdirectory:
 ```bash
 REMOTE=$(git -C "$dir" config --get remote.origin.url 2>/dev/null)
 case "$REMOTE" in
-  *github.com*) echo "$dir" ;;
-  *) ;;  # skip non-GitHub repos silently
+  *github.com*) ;;
+  *) continue ;;  # non-GitHub: skip silently
 esac
+
+# Opt-out marker: project declares itself out of sync scope
+if [[ -f "$dir/.dotforge-sync-ignore" ]]; then
+  reason=$(head -1 "$dir/.dotforge-sync-ignore" 2>/dev/null)
+  reason=${reason:-"opt-out (no reason given)"}
+  echo "IGNORED|$dir|$reason"
+  continue
+fi
+
+echo "$dir"
 ```
 
 Skip silently:
 - Directories without `.git/`
 - Repos with no `origin` remote
 - Repos with `origin` not pointing at GitHub
+
+Skip with note (reported under "Ignored" in the final summary):
+- Repos with a `.dotforge-sync-ignore` file at root. The first line of that file is shown as the reason. Use this for archived projects, vendored repos, or any GitHub-backed repo you deliberately don't want auto-synced. The marker is in the project's own working tree — version-controlled by that project, not by dotforge.
 
 ## Step 2: Classify each repo
 
@@ -119,6 +132,9 @@ Conflicts — manual intervention (Z):
 
 Unreachable (W):
   - <repo>: fetch failed (GitHub or network)
+
+Ignored (V):
+  - <repo>: <reason from .dotforge-sync-ignore>
 ```
 
 ## Step 5: Claude resolves dirty cases

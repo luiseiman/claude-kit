@@ -163,6 +163,31 @@ The `-P 8` runs up to 8 repos concurrently. Adjust `-P` based on the machine (Ma
 
 For each repo classified as `behind`, `ahead`, or `diverged`, run the action with timeout. Pattern mirrors Step 2: subshell per repo, write result to a tempfile, parallelize via xargs, collect at the end.
 
+### Push retry helper (transient failures + non-FF recovery)
+
+Lessons from the first real run: (a) ~5% of pushes fail transiently (network blip, slow remote auth) and succeed on the next attempt; (b) between classify and action, another machine may have pushed — so an `ahead` state's push fails with non-fast-forward. Both are recoverable in-line:
+
+```bash
+_smart_push() {
+  local repo=$1
+  # First attempt
+  if ${T} 60 git -C "$repo" push --quiet 2>/dev/null; then return 0; fi
+  # Retry once (transient network failure)
+  sleep 1
+  if ${T} 60 git -C "$repo" push --quiet 2>/dev/null; then return 0; fi
+  # Still failing — likely non-fast-forward. Try pull-rebase, push.
+  if ${T} 60 git -C "$repo" pull --rebase --quiet 2>/dev/null; then
+    ${T} 60 git -C "$repo" push --quiet 2>/dev/null && return 0
+  else
+    git -C "$repo" rebase --abort 2>/dev/null
+  fi
+  return 1
+}
+export -f _smart_push
+```
+
+### Action runner
+
 ```bash
 act_one() {
   local repo=$1 state=$2 outdir=$3
@@ -172,17 +197,18 @@ act_one() {
       if ${T} 60 git -C "$repo" pull --rebase --quiet 2>&1; then
         echo "$repo|pulled" > "$out"
       else
-        echo "$repo|pull-failed" > "$out"
+        git -C "$repo" rebase --abort 2>/dev/null
+        echo "$repo|pull-conflict" > "$out"
       fi ;;
     ahead)
-      if ${T} 60 git -C "$repo" push --quiet 2>&1; then
+      if _smart_push "$repo"; then
         echo "$repo|pushed" > "$out"
       else
         echo "$repo|push-failed" > "$out"
       fi ;;
     diverged)
       if ${T} 60 git -C "$repo" pull --rebase --quiet 2>&1; then
-        if ${T} 60 git -C "$repo" push --quiet 2>&1; then
+        if _smart_push "$repo"; then
           echo "$repo|reconciled" > "$out"
         else
           echo "$repo|pull-ok-push-failed" > "$out"
@@ -208,7 +234,7 @@ ACTIONS=$(cat "$ACTOUT"/*.out 2>/dev/null | sort)
 rm -rf "$ACTOUT"
 ```
 
-If a `push` fails (typically because someone else pushed first), that repo flips to "diverged" — you'd re-run sync-all to reconcile. Don't auto-retry within a single run.
+`_smart_push` makes up to 3 attempts total (push, push, pull-rebase+push). If all three fail, the repo lands in `push-failed` / `pull-ok-push-failed` for manual investigation. This handles the two common in-the-wild causes: transient network and concurrent push from another machine.
 
 ## Step 4: Build structured report
 
@@ -281,9 +307,44 @@ For each repo in the `Dirty` section, Claude decides what to do based on the dif
 2. Run `git -C <repo> log -5 --oneline` to see recent commits for context
 3. Decide:
    - **Skip**: user is mid-edit on something they haven't finished. Leave it alone, note in summary.
-   - **Commit WIP**: changes look like a coherent unit. Compose a descriptive commit message and `git add -A && git commit -m "<msg>"`, then push.
+   - **Commit WIP**: changes look like a coherent unit. Compose a descriptive commit message and stage **with worktree exclusion** (see below), then push.
    - **Stash**: changes don't fit a clean commit but need to clear the tree to pull. `git stash push -m "sync-all auto-stash <date>"`, pull, optionally `git stash pop`.
    - **Ask user**: if intent is genuinely unclear, surface via AskUserQuestion with the diff.
+
+### CRITICAL — Staging exclusions for dotforge-managed repos
+
+Many managed projects have `.claude/worktrees/<agent-worktree>/` directories. These are dotforge's internal agent worktrees: each is its own `.git` (a submodule reference from the outer repo's perspective). If you `git add .claude/` or `git add -A`, git silently adds them as embedded git references, polluting the commit history with submodule pointers that have no meaning.
+
+**Always stage with explicit exclusion** when targeting `.claude/`:
+
+```bash
+# Right — pathspec exclusion preserves the intent of "everything .claude except worktrees"
+git -C "$repo" add ".claude/" ":!.claude/worktrees/"
+
+# Alternative — stage modified, then add untracked excluding worktrees
+git -C "$repo" diff --name-only --diff-filter=M | xargs -d '\n' git -C "$repo" add --
+git -C "$repo" ls-files --others --exclude-standard | grep '^\.claude/' | grep -v '^\.claude/worktrees/' | xargs -d '\n' git -C "$repo" add --
+
+# Wrong — adds worktrees as embedded git refs
+git -C "$repo" add .claude/        # ← causes "warning: adding embedded git repository"
+git -C "$repo" add -A              # ← same
+```
+
+Verify before committing:
+
+```bash
+git -C "$repo" diff --cached --name-only | grep '\.claude/worktrees/' && {
+  echo "ERROR: worktree accidentally staged — abort"
+  git -C "$repo" reset --quiet
+  return 1
+}
+```
+
+Other paths to never auto-stage even when present in `.claude/`:
+- `.claude/session/` — ephemeral session state (last-compact.md, last-startup.md, startup-history/)
+- `.claude/.forge/runtime/` — v3 behavior state file (per-machine, gitignored normally but sometimes leaks)
+
+Same pattern: pass them as `:!.claude/session/` and `:!.claude/.forge/runtime/` exclusions.
 
 Apply the decision per repo using Bash directly. Do NOT loop back through the skill — this phase is Claude's orchestration.
 

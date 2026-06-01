@@ -18,7 +18,7 @@ As of v2.1.91, plugin packages can include a `bin/` directory with executables t
 ## Evidencia
 Official changelog v2.1.91: "Plugins can ship executables under `bin/` directory."
 
-## Impacto en claude-kit
+## Impacto en dotforge
 - `skills/` and `template/` — document bin/ convention for plugin-packaged tools
 - `docs/best-practices.md` — add note in Skills section about bundling executables
 - `plugin-generator` skill — should scaffold bin/ directory when relevant

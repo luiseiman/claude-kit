@@ -18,7 +18,7 @@ v2.1.89 introduced "defer" as a new permission decision mode for hooks. Instead 
 ## Evidencia
 Official changelog v2.1.89 (April 1, 2026): "Faster resume flows, new hook events (including 'defer' permission decisions)."
 
-## Impacto en claude-kit
+## Impacto en dotforge
 - `docs/best-practices.md` — update Hooks section: add "defer" as fourth exit behavior (alongside 0/1/2)
 - `template/hooks/block-destructive.sh` — could evolve into a defer pattern for production ops
 - `hooks/` — add example defer hook for mobile-approval workflow

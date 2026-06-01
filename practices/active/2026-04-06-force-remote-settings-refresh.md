@@ -18,7 +18,7 @@ v2.1.92 added `forceRemoteSettingsRefresh` policy setting. When enabled, Claude 
 ## Evidencia
 Official changelog v2.1.92 (April 4, 2026): "Added `forceRemoteSettingsRefresh` policy setting for fail-closed remote settings fetching."
 
-## Impacto en claude-kit
+## Impacto en dotforge
 - Relevant only for team/enterprise dotforge profiles
 - `stacks/` or a future `profiles/enterprise.json` could include this flag
 - Low priority for individual developer setups

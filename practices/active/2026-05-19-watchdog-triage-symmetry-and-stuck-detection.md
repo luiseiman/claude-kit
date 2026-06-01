@@ -43,7 +43,7 @@ fi
 ## Impact on dotforge
 
 - Posible nueva regla en `template/.claude/rules/` para proyectos de tipo "watchdog/monitoring/SRE": checklist de simetría de suppression + corroboración de backlog en stuck-detection.
-- Posible adición a `template/CLAUDE.md` sección de "anti-patterns de monitoring" si claude-kit ya tiene una.
+- Posible adición a `template/CLAUDE.md` sección de "anti-patterns de monitoring" si dotforge ya tiene una.
 - Candidato para `audit/checklist.md`: cuando un proyecto tiene `triage.sh` o equivalente, validar que todos los checks de un mismo container apliquen el mismo gating de schedule.
 
 ## Decision

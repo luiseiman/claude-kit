@@ -18,7 +18,7 @@ Since v2.1.91, MCP tools can override the max result size limit per-call by incl
 ## Evidencia
 Official changelog v2.1.91 (April 2, 2026): "Added MCP tool result persistence override via `_meta["anthropic/maxResultSizeChars"]` (up to 500K)".
 
-## Impacto en claude-kit
+## Impacto en dotforge
 - `docs/best-practices.md` — add note under MCP section
 - Any MCP server templates in `integrations/` or `mcp/` that deal with large payloads (DB query results, file reads) should document this override
 

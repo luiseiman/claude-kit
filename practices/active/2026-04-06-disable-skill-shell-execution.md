@@ -18,7 +18,7 @@ v2.1.91 added `disableSkillShellExecution` — a settings.json flag that prevent
 ## Evidencia
 Official changelog v2.1.91 (April 2, 2026): "Added `disableSkillShellExecution` setting to disable inline shell execution."
 
-## Impacto en claude-kit
+## Impacto en dotforge
 - `template/settings.json` — document as optional flag with comment
 - `docs/best-practices.md` — add to security section alongside existing YOLO-mode stripping note
 - `stacks/*/` — CI/CD stack profiles should consider enabling this by default

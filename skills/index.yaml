@@ -51,6 +51,9 @@ skills:
   - id: diff-project
     category: lifecycle
     target: project
+  - id: sync-all-repos
+    category: lifecycle
+    target: both
 
   # analysis
   - id: audit-project

@@ -24,6 +24,7 @@ If not met, show the error message and DO NOT execute the skill.
 | `bootstrap` | — | — |
 | `audit` | — | If `.claude/.forge-manifest.json` missing, warn that score has no comparison baseline (but execute anyway) |
 | `sync` | `CLAUDE.md` + `.claude/settings.json` | "This project has no dotforge config. Run `/forge bootstrap` first." |
+| `sync-all` | — | — |
 | `diff` | `.claude/.forge-manifest.json` | "No previous sync manifest found. Run `/forge bootstrap` to initialize or `/forge audit` to evaluate current state." |
 | `reset` | `.claude/` directory exists | "No configuration to reset. Run `/forge bootstrap` to initialize." |
 | `export` | `CLAUDE.md` + `.claude/settings.json` | "No configuration to export. Run `/forge bootstrap` first." |
@@ -57,6 +58,11 @@ Read `$DOTFORGE_DIR/audit/checklist.md` and `scoring.md` as reference.
 ### `sync`
 Run the `/sync-template` skill on the current project.
 Compare against `$DOTFORGE_DIR/template/` + detected stacks.
+
+### `sync-all`
+Run the `/sync-all-repos` skill. Discover every GitHub-backed git repo on this machine (Mac or VPS), classify by sync state, auto-execute the obvious cases (pull behind / push ahead / reconcile diverged), and report dirty / non-main / conflict cases for Claude to resolve.
+
+Workflow: run when sitting down at a machine to catch up with what the other machine pushed, OR before walking away to ensure committed work is on GitHub. Each machine syncs with GitHub independently — no Mac↔VPS direct coordination. Never `--force` pushes.
 
 ### `init`
 Run the `/init-project` skill on the current project.
@@ -266,6 +272,7 @@ Commands:
   init          Quick setup — auto-detects stacks, asks 4 questions, generates complete config
   audit         Audit current project against template
   sync          Sync config against template
+  sync-all      Sync every GitHub-backed repo on this machine with origin (pull behind, push ahead, defer dirty cases to Claude)
   bootstrap     Initialize .claude/ in new project [--profile minimal|standard|full]
   export        Export config to cursor|codex|windsurf|openclaw
   diff          What changed since last sync

@@ -4,6 +4,79 @@
 >
 > Historial de versiones. Las entradas usan español/inglés mixto según la evolución del proyecto. Los términos técnicos son universales.
 
+## v3.12.0 (2026-06-02)
+
+### Workflow + Ultracode policy — tier-driven defaults per project
+
+Diseñado con el Workflow tool (4 fases, 9 agentes, adversarial verify) tras consultar criterios de uso. El verify atrapó 4 issues críticos + 2 mejoras de clasificación antes de aplicar — los arreglos están reflejados en lo que se commitea.
+
+#### Conceptos canónicos (no conflagran)
+
+- **Workflow = TOOL** (orquestación multi-agente, v2.1.154+). Por tarea.
+- **Ultracode = MODE** (adversarial verify + workflow-first + plan-mode + structured output). Por proyecto, vía tier en registry.
+
+#### Nuevas piezas
+
+- **`domain/workflow-and-ultracode-policy.md`** (nueva, 65 líneas) — política canónica con 5 criterios (C1 Blast radius, C2 Domain risk, C3 Ambiguity, C4 Reversibility, C5 Prior failure), score mapping, 4 tiers (`light`/`standard`/`heavy`/`production`), portfolio table para 12 proyectos, anti-patterns. Globs: CLAUDE.md + registry.
+- **`/forge ultracode-check`** (slash command) — lee tier del registry + git state + last-startup, aplica los 5 criterios, output: "ON | CONSIDER | OFF" con score N/5 y reasoning. Override a ON si C2+C4 (irreversible touch on risk surface).
+- **`.claude/hooks/session-startup.sh`** + `template/hooks/session-startup.sh` — nuevo bloque que lee `ultracode_tier` del registry para el proyecto actual y agrega `**Ultracode tier:** <tier> — <hint>` al startup brief. Hint diferenciado por tier (production = "hard-gate, blocks merge on High"; heavy = "soft-gate"; standard = "advisory, /forge ultracode-check for verdict"; light = "workflow only for batch ops").
+- **`registry/projects.yml`** header documenta el nuevo campo `ultracode_tier` con allowed values y semantics. Promotion upward-only (no auto-demote).
+
+#### Adversarial verify findings (resueltos en este commit)
+
+| # | Finding | Resolución |
+|---|---|---|
+| 1 | Vocabulario inconsistente (command usaba `critical/standard/experimental` vs `light/standard/heavy/production` en otros) | Unificado a `{light, standard, heavy, production}` en los 4 artifacts |
+| 2 | 5 criterios distintos entre rule y command | Adoptado el set del command (más operacional): C1-C5 con nombres y umbrales explícitos |
+| 3 | Registry omitía `light` de allowed values | Documentado en header |
+| 4 | Hint del hook para `production` más débil que contrato del registry | Reforzado: "Multi-pass adversarial verify. Hard-gate: blocks merge on High findings." |
+| 5 | **dotforge clasificado `standard`** — pero propaga a 12 proyectos via `/forge sync` | Promovido a **`heavy`** (tratable como `production` para cambios en `template/hooks/`, `stacks/*/settings.json.partial`, `global/`) |
+| 6 | **SOMA2 clasificado `heavy`** — pero es dev branch sin traffic | Bajado a **`standard`** |
+
+#### Asignación de tier (12 proyectos)
+
+```
+production (3): TRADINGBOT, cotiza-api-cloud, SOMA
+heavy     (5): InviSight-iOS, jira-nbch, cds-dashboard, openclaw, dotforge
+standard  (4): SOMA2, vault-bot, derup, crm
+light     (0): —
+```
+
+#### Bug fix incidental
+
+`registry/projects.local.yml` tenía `path: '.'` para dotforge y `path: /Users/luiseiman/Documents/crm` para crm (path malo). Hook compara con cwd absoluto → no matcheaba. Fix: paths absolutos canónicos para los 12.
+
+## v3.11.0 (2026-06-01)
+
+### `/forge update` from watch-upstream — resolves /workflows TODO + 4 more
+
+Processes 5 inbox practices captured from the 2026-06-01 `/forge watch` run: 1 high-priority (resolves explicit TODO), 3 medium, 1 low-priority bundle. 1 practice deferred pending empirical testing (`init-interactive-flow`).
+
+#### Domain rules
+
+- **`domain/workflow-automation.md`** — `/workflows` section **TODO resolved**. Full v2.1.154+ coverage added: declarative `export const meta` block (pure literal constraint), 5 core primitives (`agent`/`parallel`/`pipeline`/`phase`/`log`/`workflow`), schema validation via `opts.schema`, concurrency cap (`min(16, cpu cores - 2)` per workflow, 1000 agents lifetime backstop), budget integration (`budget.total`/`spent()`/`remaining()`), resume semantics (`resumeFromRunId` + cached `(prompt, opts)` re-execution), pipeline vs parallel decision criteria, quality patterns (adversarial verify, perspective-diverse, judge panel, loop-until-dry, multi-modal sweep, completeness critic), settings (`disableWorkflows`, `workflowKeywordTriggerEnabled` v2.1.157), dotforge integration considerations.
+- **`domain/parallel-sessions.md`** — new "Lifecycle improvements (2026 changelog)" subsection: Claude-managed worktrees auto-unlock on agent finish (no more stuck worktrees blocking `git checkout main`), `EnterWorktree` mid-session switching, cleanup hygiene pattern. Lived during sync-all 2026-06-01 (TRADINGBOT `festive-maxwell-a70698`/`heuristic-swartz-65163d`). Plus `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1` opt-in for loading CLAUDE.md from `--add-dir` paths.
+- **`domain/hook-events.md`** — new "StopFailure matchers" section: documented `error_type` matcher values (`rate_limit`, `authentication_failed`, `billing_error`, `server_error`) with production-grade routing recommendations (page on billing_error, rotate token on authentication_failed, log on rate_limit, alert if server_error persistent). Concrete hook config example.
+- **`domain/hook-architecture.md`** — three additions: (1) PowerShell `if:` pattern matching fix (e.g. `PowerShell(git push*)` now actually matches), (2) new "ConfigChange matcher values" subsection (`user_settings`/`project_settings`/`policy_settings`/`skills`), (3) new "Settings.json hook parsing resilience" subsection — unrecognized event names no longer invalidate the entire `hooks` section (explains historical "why aren't my hooks running" mysteries).
+- **`domain/agent-orchestration.md`** — new "Agent-scoped hooks" section: agents can declare `PreToolUse`/`PostToolUse`/`Stop` hooks in frontmatter, scoped to that subagent's lifecycle. Use-case table per dotforge agent role (code-reviewer / security-auditor / test-runner / implementer / researcher / architect / session-reviewer). Status: documented architecturally; not yet wired into `agents/*.md` pending empirical schema verification (lowest blast radius: test-runner).
+- **`domain/permission-managed-settings.md`** — added `claudeMd` managed key (inline CLAUDE.md content in `managed-settings.json` instead of separate file deploy).
+- **`domain/auto-mode.md`** — Bedrock/Vertex/Foundry auto mode availability for Opus 4.7+4.8 (was claude.ai/Console-only).
+
+#### Templates + skills
+
+- **`template/hooks/session-report.sh`** — extended Stop hook stdin parsing to also read `error_type` from StopFailure payload (when hook is wired to both events). New `stopfailure_error_type` field in JSON metrics. Whitelist validation (`rate_limit`/`authentication_failed`/`billing_error`/`server_error`/`none`/`unknown`).
+- **`skills/sync-all-repos/SKILL.md`** — new edge case: "Stuck Claude-managed worktrees block branch checkout". Detection command + cleanup pattern. Encodes the festive-maxwell/heuristic-swartz lesson from real run today.
+
+#### Deferred
+
+- **`init-interactive-flow`** practice (`CLAUDE_CODE_NEW_INIT=1` multi-phase `/init`) marked `needs-more-info`. Requires empirical test run on a fresh project to compare against `/forge init` before deciding adoption path (deprecate / hybrid / differentiate).
+
+#### Practices lifecycle
+
+- 5 inbox → active (workflows-v2154-full-coverage, worktree-lifecycle-improvements, stopfailure-matchers, agent-frontmatter-hooks, settings-hardening-v2140-bundle)
+- 1 inbox → inbox tagged `needs-more-info` (init-interactive-flow)
+- `metrics.yml`: 5 entries added (2 monitoring, 3 informational)
+
 ## v3.10.1 (2026-06-01)
 
 ### `/forge update` partial sync from Claude Code v2.1.153 → v2.1.158 + watchdog field practice

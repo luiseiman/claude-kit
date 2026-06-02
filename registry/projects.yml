@@ -10,10 +10,23 @@
 # committed example shows the schema; `projects.local.yml` holds real state.
 #
 # Schema: name, path, stacks, last_audit, last_sync, dotforge_version, score,
-#         history, metrics_summary, notes
+#         history, metrics_summary, ultracode_tier, notes
 # Scoring v2.3.0: score = obligatorio*0.7 + recomendado*(3.0/8) (max 10.0)
 # history: array of {date, score, version} — appended, never overwritten
 # metrics_summary: aggregated from ~/.claude/metrics/{slug}/ via /forge insights
+#
+# ultracode_tier (v3.12.0+): drives default posture for Ultracode mode +
+# Workflow tool. See `.claude/rules/domain/workflow-and-ultracode-policy.md`.
+#   Allowed values:
+#     light       — experimental, no users, no money, no PII. Ultracode OFF.
+#     standard    — dev tools / governance / prototypes. Ultracode OFF default,
+#                   advisory verify only. Default when field is absent.
+#     heavy       — complex infra / team-shared / cascading-failure risk.
+#                   Ultracode ON for architecture/security tasks. Soft-gate.
+#     production  — real money / regulated / live external clients.
+#                   Ultracode ON always. Hard-gate: blocks merge on High findings.
+#   Promotion is upward-only. A project does NOT auto-demote after a quiet quarter.
+#   Read by .claude/hooks/session-startup.sh to inject tier hint into startup brief.
 #
 # Below is example data from a maintainer machine. Treat it as illustration —
 # not authoritative state. Do not edit by hand; use `/forge audit` to refresh

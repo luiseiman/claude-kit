@@ -8,16 +8,26 @@
 # Reads stdin payload from Stop event (v2.1.145+ adds background_tasks +
 # session_crons fields). Back-compat: missing fields default to 0.
 
-# --- Read Stop hook stdin payload (best-effort) ---
+# --- Read Stop / StopFailure hook stdin payload (best-effort) ---
+# Stop fields: background_tasks, session_crons (v2.1.145+)
+# StopFailure fields: error_type (v2026+: rate_limit | authentication_failed | billing_error | server_error)
+# Wire this hook to BOTH events to capture both signals — error_type empty on Stop, populated on StopFailure
 PENDING_BG_TASKS=0
 ACTIVE_CRONS=0
+ERROR_TYPE="none"
 if [[ ! -t 0 ]] && command -v jq >/dev/null 2>&1; then
   STDIN_PAYLOAD=$(cat 2>/dev/null || true)
   if [[ -n "$STDIN_PAYLOAD" ]]; then
     PENDING_BG_TASKS=$(printf '%s' "$STDIN_PAYLOAD" | jq -r '.background_tasks // [] | length' 2>/dev/null)
     ACTIVE_CRONS=$(printf '%s' "$STDIN_PAYLOAD" | jq -r '.session_crons // [] | length' 2>/dev/null)
+    ERROR_TYPE=$(printf '%s' "$STDIN_PAYLOAD" | jq -r '.error_type // "none"' 2>/dev/null)
     PENDING_BG_TASKS=${PENDING_BG_TASKS//[!0-9]/}; PENDING_BG_TASKS=${PENDING_BG_TASKS:-0}
     ACTIVE_CRONS=${ACTIVE_CRONS//[!0-9]/}; ACTIVE_CRONS=${ACTIVE_CRONS:-0}
+    # Validate ERROR_TYPE against known values; reject unknown to keep metrics tidy
+    case "$ERROR_TYPE" in
+      rate_limit|authentication_failed|billing_error|server_error|none) ;;
+      *) ERROR_TYPE="unknown" ;;
+    esac
   fi
 fi
 
@@ -184,7 +194,8 @@ cat > "$METRICS_FILE" << JSON
   "tool_time_ms": $TOOL_TIME_MS,
   "tool_slowest": "$TOOL_SLOWEST",
   "pending_bg_tasks": $PENDING_BG_TASKS,
-  "active_crons": $ACTIVE_CRONS
+  "active_crons": $ACTIVE_CRONS,
+  "stopfailure_error_type": "$ERROR_TYPE"
 }
 JSON
 

@@ -1090,3 +1090,53 @@ practices:
     status: monitoring
     projects_applied: 1
     last_checked: 2026-06-01
+  - id: practice-2026-06-01-workflows-v2154-full-coverage
+    error_targeted: null
+    error_type: null
+    activated: 2026-06-01
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: null
+  - id: practice-2026-06-01-worktree-lifecycle-improvements
+    error_targeted: "stuck dotforge agent worktree blocks main checkout in target repo (fatal: '<branch>' is already used by worktree at .claude/worktrees/...)"
+    error_type: integration
+    activated: 2026-06-01
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: monitoring
+    projects_applied: 0
+    last_checked: null
+  - id: practice-2026-06-01-stopfailure-matchers
+    error_targeted: "production session dies silently on billing_error or authentication_failed without operator notification"
+    error_type: config
+    activated: 2026-06-01
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: monitoring
+    projects_applied: 0
+    last_checked: null
+  - id: practice-2026-06-01-agent-frontmatter-hooks
+    error_targeted: null
+    error_type: null
+    activated: 2026-06-01
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: null
+  - id: practice-2026-06-01-settings-hardening-v2140-bundle
+    error_targeted: null
+    error_type: null
+    activated: 2026-06-01
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: null

@@ -41,6 +41,26 @@ last_verified: 2026-05-27
 - Always verify subagent output (run tests/lint) before declaring task done
 - `/reload-skills` slash command (v2.1.152+) re-scans skill directories in the current session without restart — pair with the SessionStart hook field `reloadSkills: true` if a hook installs skills
 
+## Agent-scoped hooks (frontmatter `hooks:`)
+
+Agents can declare `PreToolUse`, `PostToolUse`, and `Stop` hooks in their frontmatter, scoped to that subagent's lifecycle. Hooks fire ONLY while that subagent is the active executor — not globally — enabling per-role guardrails without polluting `.claude/settings.json`.
+
+Use cases per dotforge agent role:
+
+| Agent | Event | Purpose |
+|-------|-------|---------|
+| `code-reviewer` | PostToolUse on `Edit\|Write` | Run lint/typecheck; block on errors via `decision: "block"` (or `continueOnBlock: true` for self-healing) |
+| `security-auditor` | PreToolUse on `Bash\|Write\|Edit` | Read-only enforcement — auto-deny mutations (defense-in-depth atop `allowed-tools:`) |
+| `test-runner` | PostToolUse on `Bash` | Parse test results from output; persist failures into agent-memory |
+| `implementer` | Stop | Refuse exit unless tests passed for files touched this session |
+| `researcher` | PreToolUse on `Edit\|Write` | Belt-and-suspenders deny (already restricted via `allowed-tools:`) |
+| `architect` | PreToolUse on `Edit\|Write` | Plan-mode enforcement — block until plan accepted |
+| `session-reviewer` | PostToolUse | Capture corrections/patterns for `/forge insights` feeding |
+
+Composition with global hooks: agent hooks **merge** with `.claude/settings.json` hooks — both run. Static deny rules cannot be removed by agent-scoped hooks. Schema mirrors the top-level `hooks` object shape.
+
+**Status in dotforge (2026-06-01)**: documented architecturally here; not yet wired into `agents/*.md` files pending empirical schema verification against upstream docs. When adopting, validate against `code.claude.com/docs/en/sub-agents` and test in `agents/test-runner.md` first (lowest blast radius).
+
 ## OpenTelemetry instrumentation (v2.1.139+, v2.1.145+)
 
 - `claude_code.llm_request` spans carry `agent_id` and `parent_agent_id` attributes (v2.1.139+)

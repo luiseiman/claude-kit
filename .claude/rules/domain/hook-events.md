@@ -65,6 +65,31 @@ Standard output fields all hooks may return:
 - Override the cap via `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP=<n>` env var
 - Implication: blocks **must converge**. A Stop hook that gates on a flaky test should count attempts and let the turn pass after N retries instead of looping. Treat `decision: "block"` as a signal for "more work needed", not "force always"
 
+## StopFailure matchers (production routing)
+
+Matcher accepts the documented `error_type` values. Use for production-grade routing instead of treating all stop failures the same:
+
+| `error_type` matcher | When it fires | Recommended action |
+|----------------------|---------------|--------------------|
+| `rate_limit` | API request hit RPM/TPM ceiling | Log only — Claude Code auto-retries. Alert if >N/hour |
+| `authentication_failed` | OAuth token expired/revoked, or `ANTHROPIC_API_KEY` invalid | Trigger token rotation or page operator |
+| `billing_error` | Subscription quota exhausted or payment failed | **PAGE** — bot will not recover without human intervention |
+| `server_error` | Anthropic-side 5xx | Log + degrade gracefully. Alert if persistent (>5min sustained) |
+
+Production hook config:
+```json
+{
+  "StopFailure": [
+    {"matcher": "billing_error",         "hooks": [{"type": "command", "command": ".claude/hooks/page-operator.sh billing"}]},
+    {"matcher": "authentication_failed", "hooks": [{"type": "command", "command": ".claude/hooks/rotate-token.sh"}]},
+    {"matcher": "rate_limit",            "hooks": [{"type": "command", "command": ".claude/hooks/log-rate-limit.sh"}]},
+    {"matcher": "server_error",          "hooks": [{"type": "command", "command": ".claude/hooks/log-server-error.sh"}]}
+  ]
+}
+```
+
+StopFailure is observability-only (not blockable) — the hook reports/alerts, it can't prevent the failure. Useful for trading bots, cron-driven `/schedule` jobs, and any unattended session where silent death is unacceptable.
+
 ## Display events (v2.1.152+)
 
 - **MessageDisplay**: fires when an assistant message is about to be rendered to the user. Hook can transform the text (e.g. PII/secret redaction) or hide it entirely. First "display-time" event — distinct from all prior events which are control-flow

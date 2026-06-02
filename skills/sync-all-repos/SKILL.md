@@ -380,6 +380,7 @@ Unreachable: U
 - **Repo doesn't exist on this machine**: search-roots-based discovery skips it silently. No error.
 - **Repo is a submodule**: detect via `.git` being a file (not a directory). Skip submodules — they're managed by their parent.
 - **Repo has a non-`origin` GitHub remote**: only `origin` is considered. If you push to multiple GitHubs, you're outside the scope of this skill.
+- **Stuck Claude-managed worktrees block branch checkout**: post-v2.1.x changelog (verify exact version), Claude-managed worktrees auto-unlock on agent finish. Pre-fix, they kept the git lock and broke `git checkout main` with `'main' is already used by worktree at ...`. Detection during sync: for any repo, run `git -C "$repo" worktree list --porcelain | awk '/^worktree/ {print $2}' | grep "$repo/.claude/worktrees/"` to find Claude-managed worktrees still registered. If a worktree's branch has no unique commits vs origin AND no uncommitted work, propose cleanup: `git worktree remove <path>` + `git branch -D <branch>` + `git worktree prune`. Lived 2026-06-01 — TRADINGBOT's `claude/festive-maxwell-a70698` and `heuristic-swartz-65163d` blocked main checkout mid-sync.
 
 ## Constraints
 

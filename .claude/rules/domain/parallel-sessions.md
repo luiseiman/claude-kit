@@ -23,6 +23,13 @@ Two orthogonal axes of parallelism: (a) **subagents** — isolated context, shar
 - Each worktree has its own branch, its own `.claude/session/`, and does not see other worktrees' in-flight edits
 - `worktree.baseRef` setting (v2.1.133+): `"fresh"` (default) branches from `origin/<default>`, `"head"` branches from local HEAD. **Subtle versioned breaking**: in v2.1.128–v2.1.132 the default was `head` (carried unpushed commits into new worktrees); v2.1.133 reverted to `fresh`. Set `worktree.baseRef: "head"` if you rely on unpushed work being available to teammates
 
+### Lifecycle improvements (2026 changelog)
+
+- **Auto-unlock on agent finish**: Claude-managed worktrees no longer keep the git lock after the spawning agent exits. `git worktree remove`/`git worktree prune` now work without manual `--force`. Pre-fix the lock persisted, causing `'main' is already used by worktree at ...` when trying to `git checkout main` (lived during sync-all 2026-06-01 — TRADINGBOT's `claude/festive-maxwell-a70698` and `heuristic-swartz-65163d` worktrees blocked main checkout)
+- **`EnterWorktree` mid-session switching**: a single session can now `EnterWorktree(path)` between Claude-managed worktrees without ending the session. Enables Lead-coordinated workflows where one agent context inspects/merges multiple teammate worktrees sequentially
+- **Cleanup hygiene**: after Agent Teams or long-running parallel work, `git worktree list --porcelain | awk '/^worktree/ {print $2}'` discovers stale Claude-managed worktrees; remove with `git worktree remove <path>` (no `--force` needed post-fix)
+- Independent from `worktree.bgIsolation: "none"` (v2.1.143) — auto-unlock applies regardless of isolation mode
+
 ## Background sessions (v2.1.139+)
 
 Process-level isolation alongside the filesystem-level isolation of `--worktree`. Six surfaces:
@@ -73,7 +80,7 @@ For exhaustive flag reference see `cli-flags.md`.
 ## Fast-start flags relevant to parallelism
 
 - `--bare`: skip auto-discovery (hooks, skills, plugins, MCP, auto memory, CLAUDE.md). Sets `CLAUDE_CODE_SIMPLE`. Use for scripted calls or SDK cold starts — up to 10× faster
-- `--add-dir <path>`: grants file access but NOT `.claude/` discovery. Exception: `.claude/skills/` IS loaded from added dirs (live change detection). Other config (agents, commands, rules) is ignored
+- `--add-dir <path>`: grants file access but NOT `.claude/` discovery. Exception: `.claude/skills/` IS loaded from added dirs (live change detection). Other config (agents, commands, rules) is ignored. **Opt-in CLAUDE.md load** (2026): set `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1` to also load `CLAUDE.md`, `.claude/CLAUDE.md`, `.claude/rules/*.md`, and `CLAUDE.local.md` from `--add-dir` paths. Use for shared-config repos where multiple projects pull in common rules from a central directory. `CLAUDE.local.md` honored only if `--setting-sources` includes `local`
 - `--agents '<json>'`: define subagents inline via JSON (same fields as frontmatter plus `prompt`). Useful for ad-hoc one-off agents without a file
 - `--setting-sources user,project,local`: filter which scopes load. Use for deterministic tests
 - `--teammate-mode auto|in-process|tmux`: how agent-team teammates display. `in-process` = same pane, `tmux` = split terminals

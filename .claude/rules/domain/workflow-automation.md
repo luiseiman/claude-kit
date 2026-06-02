@@ -40,10 +40,81 @@ Five primitives cover temporal and multi-agent orchestration: `/goal` (condition
 
 ## `/workflows` — dynamic multi-agent orchestration (v2.1.154+)
 
-- Use for: orchestrating **tens to hundreds of agents** with inter-dependencies, multi-stage pipelines, or fan-out-then-merge shapes that `/batch` can't express
-- Distinct from Agent Teams (handcrafted, ≤4 teammates, declared upfront): `/workflows` is dynamic — the workflow shape is decided at runtime, not pre-declared
-- v2.1.158 added a `"Workflow keyword trigger"` settings.json option to suppress accidental activation when the literal word "workflow" appears in a prompt
-- **TODO**: read official docs to document the declarative vs dynamic API surface, settings schema, and concrete examples. This primitive is stubbed here to flag its existence; full coverage pending
+JavaScript script that Claude writes for the task you describe; a runtime executes it in the background while your session stays responsive. Use when one conversation can't coordinate the work, or when you want orchestration codified as a script you can read/rerun.
+
+- Use for: codebase-wide bug sweep, 500-file migration, multi-source research with cross-check, multi-angle plan drafting
+- Distinct from Agent Teams (handcrafted ≤4 teammates, declared upfront): `/workflows` is dynamic — shape decided at runtime, scales to tens-to-hundreds of agents
+- Availability: v2.1.154+ on all paid plans, Anthropic API, Bedrock, Vertex, Foundry
+- Inspect runs: `/workflows`, arrow-keys to select, Enter to open progress view
+
+### Declarative meta block (required prefix)
+
+```javascript
+export const meta = {
+  name: 'find-flaky-tests',
+  description: 'Find flaky tests and propose fixes',  // shown in permission dialog
+  phases: [                                            // one entry per phase() call
+    { title: 'Scan', detail: 'grep CI logs for retries' },
+    { title: 'Fix', detail: 'one agent per flaky test' },
+  ],
+}
+// script body starts here
+```
+
+`meta` must be a PURE LITERAL — no variables, function calls, spreads, or template interpolation. Required: `name`, `description`. Optional: `whenToUse`, `phases`, `model`.
+
+### Core primitives
+
+- `agent(prompt, opts?)` — spawn subagent. Returns final text (string) or validated object (when `opts.schema` set). Returns `null` if user skips mid-run → `.filter(Boolean)`. Opts: `label`, `phase`, `schema`, `model`, `isolation: 'worktree'`, `agentType`
+- `parallel(thunks)` — barrier: awaits all thunks. Throws/errors resolve to `null` (call never rejects). Use ONLY when stage N genuinely needs cross-item context from all of stage N-1
+- `pipeline(items, ...stages)` — DEFAULT for multi-stage. No barrier between stages. Item A can be in stage 3 while item B is still in stage 1. Wall-clock = slowest single-item chain. A throwing stage drops that item to `null`
+- `phase(title)` — start progress group; subsequent `agent()` calls land under this title
+- `log(message)` — narrator line above progress tree
+- `workflow(name|{scriptPath}, args?)` — run another workflow inline (1 level deep)
+
+### Schema validation
+
+`opts.schema` forces a StructuredOutput tool call; validation happens at the tool layer so the model retries on mismatch. Returns the validated object directly — no JSON.parse needed.
+
+### Concurrency + budget
+
+- Per-workflow concurrent cap: `min(16, cpu cores - 2)` — excess `parallel()`/`pipeline()` items queue and run as slots free
+- Lifetime cap: 1000 agents per workflow (runaway backstop)
+- `budget.total` (null if not set), `budget.spent()`, `budget.remaining()` — pool is shared across main loop + all workflows in the turn. Once `spent() >= total`, `agent()` throws
+
+```javascript
+while (budget.total && budget.remaining() > 50_000) {  // guard on .total — else remaining() is Infinity
+  const result = await agent("Find more bugs", {schema: BUGS_SCHEMA})
+  bugs.push(...result.bugs)
+}
+```
+
+### Resume
+
+`Workflow({scriptPath, resumeFromRunId})` — cached `(prompt, opts)` agent calls return instantly; first edited/new call runs live. Same script + same args → 100% cache hit. `Date.now()`, `Math.random()`, argless `new Date()` are unavailable in scripts (would break resume) — pass timestamps via `args`, stamp at the end.
+
+### Pipeline vs parallel decision
+
+Default to **pipeline**. Use parallel barrier ONLY when:
+- Dedup/merge across full result set before expensive downstream work
+- Early-exit if total count is zero
+- Stage N prompt references "the other findings" for comparison
+
+NOT a barrier justification: "I need to flatten/filter first" → do it inside a pipeline stage.
+
+### Quality patterns
+
+Compose for thoroughness: adversarial verify (N skeptics try to refute; ≥majority refute → kill), perspective-diverse verify (correctness/security/perf lenses instead of N identical refuters), judge panel (independent attempts scored by parallel judges), loop-until-dry (K consecutive empty rounds = done), multi-modal sweep (each agent searches a different way), completeness critic (final "what's missing?" agent).
+
+### Settings
+
+- `disableWorkflows: true` — kill switch (equivalent to `CLAUDE_CODE_DISABLE_WORKFLOWS=1`)
+- `workflowKeywordTriggerEnabled` (v2.1.157, default `true`) — controls whether literal word "workflow" in prompt triggers expansion. Turn off when team uses "workflow" generically
+
+### dotforge integration considerations
+
+- Workflows ARE distributable via plugins (`.claude/skills/<name>/` or marketplace) — but currently dotforge has no `/forge workflow` wrapper. Candidate: register saved workflow scripts under `workflows/<name>.js` in dotforge with a `/forge workflow <name>` dispatcher
+- Agent Teams (handcrafted ≤4) remain the right tool for known small fan-out; `/workflows` for unknown-shape or large scale
 
 ## Routines vs `/schedule` vs Desktop scheduled tasks
 

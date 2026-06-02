@@ -67,6 +67,30 @@ Every hook event's stdin JSON now includes `effort.level` (`"low" | "medium" | "
 
 - `if` field: filter by permission rule syntax (e.g., `"if": "Bash(git *)"`) — replaces matcher + script logic
 - **`if` is evaluated ONLY on tool events** (PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest). Silently ignored on other events — hook fires unconditionally there. Writing `if: "Bash(git *)"` on a `Stop` or `SessionStart` hook is a no-op filter.
+- **PowerShell `if:` patterns** (2026 fix): `if: "PowerShell(git push*)"` and similar wildcarded PowerShell rules now actually match. Pre-fix only `PowerShell(*)` matched; specific patterns silently failed. Affects Windows users + Linux/macOS with `CLAUDE_CODE_USE_POWERSHELL_TOOL=1`. If you have legacy `PowerShell(*)` rules added as a workaround, you can now tighten to specific commands.
+
+## ConfigChange matcher values
+
+`ConfigChange` hook accepts a `config_source` matcher with documented values: `user_settings`, `project_settings`, `policy_settings`, `skills`. Use to detect when a managed admin pushes a settings update, when a project's `.claude/settings.json` changes mid-session, or when skills are added/removed.
+
+```json
+{
+  "ConfigChange": [
+    {"matcher": "policy_settings", "hooks": [{"type": "command", "command": ".claude/hooks/managed-policy-changed.sh"}]},
+    {"matcher": "skills",          "hooks": [{"type": "command", "command": ".claude/hooks/skills-reload.sh"}]}
+  ]
+}
+```
+
+`policy_settings` matcher is the highest-signal — fires when managed-settings.json was refetched and changed. Useful for enterprises that want to log every policy refresh. `skills` matcher pairs with `SessionStart.reloadSkills: true` (v2.1.152+) for live skill development workflows.
+
+## Settings.json hook parsing resilience (2026 fix)
+
+Pre-fix: an unrecognized event name in `settings.json` `hooks` section (typo, deprecated event, or hook from a newer Claude Code version) silently invalidated the **entire** hooks section. Symptom: every hook stopped firing, hard to diagnose because no error surfaced.
+
+Post-fix: the unrecognized event is logged and skipped. Remaining hooks still load. Explains historical "why aren't my hooks running" mysteries — check older sessions' logs for the typo, fix it, hooks resume.
+
+dotforge implication: when defining hooks for very recent events (MessageDisplay, PostToolBatch, Setup), older Claude Code versions on collaborator machines won't reject the whole config — they'll just skip the new event and run the rest. Safer to ship hooks for new events.
 
 ## Async, timeouts, matchers
 

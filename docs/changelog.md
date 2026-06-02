@@ -4,6 +4,39 @@
 >
 > Historial de versiones. Las entradas usan español/inglés mixto según la evolución del proyecto. Los términos técnicos son universales.
 
+## v3.12.1 (2026-06-02)
+
+### Housekeeping — completar `/forge update` 2026-06-01 sin commitear
+
+El `/forge update` del 1/6 había procesado 6 prácticas y editado 7 domain rules + metrics + skill + template hook, pero quedó sin commitear. Esta versión los baja a `main` sin nuevos cambios. Esto es housekeeping puro — no agrega features.
+
+#### Prácticas movidas a estado terminal
+
+| Práctica | Estado |
+|---|---|
+| `2026-06-01-workflows-v2154-full-coverage` | active — completa cobertura de `/workflows` v2.1.154 en `domain/workflow-automation.md` (+75 líneas) |
+| `2026-06-01-agent-frontmatter-hooks` | active — documenta hooks scoped por subagent en `domain/agent-orchestration.md` (+20 líneas) |
+| `2026-06-01-stopfailure-matchers` | active — matchers de `StopFailure` event para production routing en `domain/hook-events.md` (+25 líneas, parte) |
+| `2026-06-01-settings-hardening-v2140-bundle` | active — bundle de hardenings v2.1.140 (auto-mode, hooks, managed-settings, permission-managed) |
+| `2026-06-01-worktree-lifecycle-improvements` | active — auto-unlock + `EnterWorktree` mid-session en `domain/parallel-sessions.md` (+8 líneas) |
+| `2026-06-01-init-interactive-flow` | evaluating — propuesta de flujo init interactivo |
+
+#### Domain rules actualizados
+
+- `domain/workflow-automation.md` (+75) — coverage completa de `/workflows` v2.1.154
+- `domain/hook-events.md` (+25) — StopFailure matchers + Stop/SubagentStop additional fields v2.1.145+
+- `domain/hook-architecture.md` (+24) — agent-scoped hooks frontmatter + OpenTelemetry agent attribution
+- `domain/agent-orchestration.md` (+20) — agent-scoped hooks pattern + OTEL spans
+- `domain/parallel-sessions.md` (+8) — worktree lifecycle improvements
+- `domain/auto-mode.md` (+1) — hardening note
+- `domain/permission-managed-settings.md` (+1) — hardening note
+
+#### Otros
+
+- `template/hooks/session-report.sh` (+13) — métrica adicional (probable: pending_bg_tasks + active_crons)
+- `skills/sync-all-repos/SKILL.md` (+1) — minor edit
+- `practices/metrics.yml` (+50) — 6 entradas nuevas correspondientes a las prácticas movidas
+
 ## v3.12.0 (2026-06-02)
 
 ### Workflow + Ultracode policy — tier-driven defaults per project

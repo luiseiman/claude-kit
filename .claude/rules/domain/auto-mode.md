@@ -17,6 +17,7 @@ last_verified: 2026-05-27
 - `--permission-mode auto` to start in auto mode from CLI
 - Disable (managed): `permissions.disableAutoMode: "disable"`
 - **Max subscribers on Opus 4.7**: auto mode available as a tier gate (v2.1.111+) — no opt-in beyond the pricing plan
+- **Enterprise platforms (2026)**: auto mode now available on Amazon Bedrock, Google Cloud Vertex AI, and Microsoft Foundry for Opus 4.7 and Opus 4.8. Previously claude.ai/Console-only. Regulated workloads (banking, healthcare) that must run on their cloud provider's Anthropic deployment can now use auto mode. Verify against managed-settings if your enterprise wants to disable: `permissions.disableAutoMode: "disable"`
 - `showThinkingSummaries`: defaults to false since v2.1.89 — controls VISIBILITY only. Thinking blocks render as collapsed stub when off, full summary when on. **Does NOT reduce thinking token spend** — model generates the same content either way. Headless mode (`-p`) and SDK callers always receive summaries regardless of this flag.
 - `alwaysThinkingEnabled`: enables extended thinking by default for all sessions. **This is the actual cost knob** — set `false` to stop generating thinking blocks. To trim spend without disabling, lower `effort` or the API `thinking_budget` instead. Typically set via `/config`, not edited directly.
 - `disableSkillShellExecution`: blocks inline shell in skills/commands (managed)

@@ -12,6 +12,7 @@ globs: "**/*.md,**/*.sh,**/*.yml,**/*.json,**/*.tmpl,**/*.py,**/*.ts,**/*.tsx,**
 - Branch naming: feature/, fix/, refactor/, chore/
 - Customize commit/PR trailers via `attribution.commit` and `attribution.pr` in `settings.json` — supersedes the deprecated `includeCoAuthoredBy` boolean
 - For self-hosted GitHub/GitLab/Bitbucket, set `prUrlTemplate` to point the footer PR badge at the right host
+- Before opening a PR, confirm CI is green on the base branch (`gh run list --branch main --limit 5`). A preexisting red required check blocks every PR and masks degraded workflows — fix or flag it first, don't stack new work on a blocked pipeline
 
 ## Naming
 - Descriptive variable/function names, no cryptic abbreviations

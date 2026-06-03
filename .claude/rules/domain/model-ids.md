@@ -19,7 +19,7 @@ Default agents: opus → architect, security-auditor. sonnet → implementer, co
 
 ## Effort levels (v2.1.111+)
 
-Five tiers: `low` < `medium` < `high` < `xhigh` < `max`. `xhigh` is Opus-exclusive (4.7 and 4.8) — Sonnet/Haiku fall back to `high` when xhigh is requested. Global default is `effort: high` (changed v2.1.94, 2026-04-07, was `medium`). Opus 4.8 defaults to `high` with `xhigh` available out of the box.
+Five core tiers + 1 mode tier: `low` < `medium` < `high` < `xhigh` < `max`, plus `ultracode` (v2.1.154+ runtime activator). `xhigh` is Opus-exclusive (4.7 and 4.8) — Sonnet/Haiku fall back to `high` when xhigh is requested. **`ultracode`** is also Opus-only (4.7+4.8) — combines `xhigh` reasoning + automatic workflow orchestration per substantive task. Activated via `/effort ultracode`, session-only, resets on new session. With it on, each substantive request can spawn several workflows in sequence (understand → change → verify). Pairs with dotforge's `workflow-and-ultracode-policy.md` tier system: `production`/`heavy` tier → recommend `/effort ultracode` at session start. Global default is `effort: high` (changed v2.1.94, 2026-04-07, was `medium`). Opus 4.8 defaults to `high` with `xhigh` available out of the box.
 
 - Skills/agents WITHOUT explicit `effort:` consume more tokens and run slower
 - Pin `effort: low` in `agents/researcher.md` and `agents/test-runner.md` to keep them cheap

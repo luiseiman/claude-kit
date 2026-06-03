@@ -12,11 +12,26 @@ last_verified: 2026-05-27
 | Mode | Behavior | Use case |
 |------|----------|----------|
 | default | Allow/deny rules + prompt for unknowns | Normal interactive use |
-| acceptEdits | Allow all edits without prompt | SDK mode |
+| acceptEdits | Allow most edits without prompt — **exceptions: shell rc files (always) + build-tool config (v2.1.160+)** | SDK mode |
 | plan | Read-only enforcement | Architecture planning |
 | auto | LLM classifier decides per-tool (Sonnet 4.6) | Autonomous operation |
 | dontAsk | Auto-deny everything not explicitly allowed | CI/headless pipelines |
 | bypassPermissions | Allow everything | Fully trusted environments |
+
+## Paths that always prompt regardless of mode (v2.1.160+)
+
+Claude Code prompts before writing to these regardless of `permissions.defaultMode` (even `acceptEdits` and `auto`). The prompt is built-in and cannot be suppressed without `bypassPermissions`:
+
+**Shell startup files** (always):
+- `.zshenv`, `.zlogin`, `.bash_login`
+- Anything under `~/.config/git/`
+
+**Build-tool config** (prompts in `acceptEdits` mode):
+- `.npmrc`, `.yarnrc*`, `bunfig.toml`, `.bazelrc`
+- `.pre-commit-config.yaml`
+- Anything under `.devcontainer/`
+
+Reason: these files can execute arbitrary commands at shell-startup time or alter the entire toolchain, so a single hallucinated edit can compromise the dev environment. Defense-in-depth: `sandbox.filesystem.denyWrite` is the kernel-level equivalent that cannot be bypassed by mode. For projects where Claude should never touch these even with consent, add to `permissions.deny`.
 
 ## Evaluation cascade
 

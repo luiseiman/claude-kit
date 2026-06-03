@@ -58,9 +58,9 @@ Requires a Claude subscription. Tokens are long-lived but rotate periodically �
 
 ## Enterprise enforcement fix (v2.1.147)
 
-The managed-settings `forceLoginOrgUUID` (restrict login to specific org UUIDs) and `forceLoginMethod` (`claudeai` | `console`) were enforced **only against Claude.ai login sessions** before v2.1.147. **Third-party-provider** (Bedrock, Vertex, Foundry) and **API-key** (`ANTHROPIC_API_KEY`) sessions bypassed both restrictions silently.
+The managed-settings `forceLoginOrgUUID` (restrict login to specific org UUIDs) and `forceLoginMethod` (`claudeai` | `console`) were enforced **only against Claude.ai login sessions** before v2.1.147. **Third-party-provider** (Bedrock, Vertex, Foundry, Mantle) and **API-key** (`ANTHROPIC_API_KEY`) sessions bypassed both restrictions silently.
 
-Post-fix: both managed-settings apply to all session types. Pre-v2.1.147 enterprise audits may have a false sense of coverage — re-verify on a current Claude Code build.
+Post-fix: both managed-settings apply to all session types. Pre-v2.1.147 enterprise audits may have a false sense of coverage — re-verify on a current Claude Code build. Mantle was first mentioned in v2.1.161 changelog as one of the third-party providers; scope (cloud reseller vs new Anthropic-deployed surface) not yet documented in detail upstream.
 
 ## Cross-references
 

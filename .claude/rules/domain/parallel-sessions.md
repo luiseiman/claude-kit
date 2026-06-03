@@ -43,7 +43,7 @@ Process-level isolation alongside the filesystem-level isolation of `--worktree`
 
 `claude agents` (v2.1.139+, Research Preview) opens the unified agent view showing every session (running/blocked/done). When stdin is piped, the older subagent-listing behavior is preserved.
 
-`claude agents --json` (v2.1.145+) emits live sessions as a JSON array for scripting (tmux-resurrect, custom status bars, session pickers). `/resume` supports background sessions since v2.1.144 — `--bg`-started sessions appear in the picker marked `bg`.
+`claude agents --json` (v2.1.145+) emits live sessions as a JSON array for scripting (tmux-resurrect, custom status bars, session pickers). `/resume` supports background sessions since v2.1.144 — `--bg`-started sessions appear in the picker marked `bg`. `claude agents` rows show `done/total` agent count before the row detail (v2.1.161+) — useful when one fan-out has many subagents to track progress at a glance.
 
 Pick by isolation needed:
 - **Worktree** (`--worktree`): separate working tree, separate branch. Best for parallel features that touch the same files

@@ -17,7 +17,7 @@ last_verified: 2026-05-27
 - `--permission-mode auto` to start in auto mode from CLI
 - Disable (managed): `permissions.disableAutoMode: "disable"`
 - **Max subscribers on Opus 4.7**: auto mode available as a tier gate (v2.1.111+) — no opt-in beyond the pricing plan
-- **Enterprise platforms (2026)**: auto mode now available on Amazon Bedrock, Google Cloud Vertex AI, and Microsoft Foundry for Opus 4.7 and Opus 4.8. Previously claude.ai/Console-only. Regulated workloads (banking, healthcare) that must run on their cloud provider's Anthropic deployment can now use auto mode. Verify against managed-settings if your enterprise wants to disable: `permissions.disableAutoMode: "disable"`
+- **Enterprise platforms (2026)**: auto mode available on Amazon Bedrock, Google Cloud Vertex AI, Microsoft Foundry, and Mantle for Opus 4.7 and Opus 4.8. Previously claude.ai/Console-only. Regulated workloads (banking, healthcare) that must run on their cloud provider's Anthropic deployment can now use auto mode. **Opt-in env var required on third-party providers** (v2.1.158): `CLAUDE_CODE_ENABLE_AUTO_MODE=1`. Verify against managed-settings if your enterprise wants to disable: `permissions.disableAutoMode: "disable"`
 - `showThinkingSummaries`: defaults to false since v2.1.89 — controls VISIBILITY only. Thinking blocks render as collapsed stub when off, full summary when on. **Does NOT reduce thinking token spend** — model generates the same content either way. Headless mode (`-p`) and SDK callers always receive summaries regardless of this flag.
 - `alwaysThinkingEnabled`: enables extended thinking by default for all sessions. **This is the actual cost knob** — set `false` to stop generating thinking blocks. To trim spend without disabling, lower `effort` or the API `thinking_budget` instead. Typically set via `/config`, not edited directly.
 - `disableSkillShellExecution`: blocks inline shell in skills/commands (managed)
@@ -83,3 +83,5 @@ Broad allow rules are SILENTLY STRIPPED when auto mode activates:
 | Agent | no | no |
 
 **Native macOS/Linux builds (v2.1.117+)**: standalone `Glob` and `Grep` tools are replaced by embedded `bfs` and `ugrep` reachable through `Bash`. They no longer appear as separate concurrent-safe surfaces — searches inherit Bash's "not concurrent-safe" classification. Hooks with `matcher: "Glob"` or `matcher: "Grep"` silently never fire on native builds. Windows and npm-installed builds keep the original tools.
+
+**Batch-level failure isolation (v2.1.161+)**: "Bash = not concurrent-safe" refers to kernel-level concurrency (filesystem races, shared state). At the batch dispatch level, v2.1.161 changed semantics — a failed Bash call in a parallel batch no longer cancels the others. Independent calls complete and their results all reach `PostToolBatch`. See `hook-events.md` § PostToolBatch.

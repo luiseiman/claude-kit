@@ -21,7 +21,7 @@ Companion to `permission-model.md`. Covers managed-scope governance, MCP server 
 - `strictKnownMarketplaces` — managed allowlist of plugin marketplace sources (exact match; `github`, `git`, `url`, `npm`, `file`, `directory`, `hostPattern`)
 - `blockedMarketplaces` — managed denylist; takes precedence over `extraKnownMarketplaces`
 - `pluginTrustMessage` — custom warning shown on plugin trust prompts
-- `forceLoginOrgUUID` / `forceLoginMethod` — restrict login to org UUIDs or to `claudeai`/`console`. **v2.1.147 fix**: now enforced against third-party-provider (Bedrock/Vertex/Foundry) AND API-key sessions; before v2.1.147 those bypassed both restrictions silently. Re-verify enterprise audits done on older Claude Code builds. See `auth.md`
+- `forceLoginOrgUUID` / `forceLoginMethod` — restrict login to org UUIDs or to `claudeai`/`console`. **v2.1.147 fix**: now enforced against third-party-provider (Bedrock/Vertex/Foundry/Mantle) AND API-key sessions; before v2.1.147 those bypassed both restrictions silently. Re-verify enterprise audits done on older Claude Code builds. See `auth.md`
 - `claudeMd` (managed) — embed org-wide CLAUDE.md content directly in `managed-settings.json` as a string instead of deploying a separate file at `/Library/Application Support/ClaudeCode/CLAUDE.md` (or Linux/Windows equivalents). Example: `"claudeMd": "Always run \`make lint\` before committing.\\nNever push directly to main."`. Honored only in managed/policy scope — setting it in user/project/local has no effect. Same precedence as a managed CLAUDE.md file
 
 ## MCP server config
@@ -34,6 +34,7 @@ Companion to `permission-model.md`. Covers managed-scope governance, MCP server 
 - `alwaysLoad: true` (per-server, v2.1.121+) — tools skip tool-search deferral and stay always available. Costs context for fewer tool-search invocations. Use only when MCP tools are needed every turn
 - `workspace` reserved as MCP server name since v2.1.128 — projects with that name skipped with warning
 - MCP tools default to `passthrough` (always ask)
+- **`claude mcp list/get/add` secrets handling (v2.1.161 fix)**: pre-fix the CLI subcommands printed `${VAR}`-expanded values verbatim, leaking subprocess env into stdout (incident potential when piping `claude mcp list` to a log file or screenshare). Post-fix `${VAR}` is no longer expanded in CLI output — safer to dump configs for review. Audit any pre-v2.1.161 ops runbooks that included `claude mcp list` output.
 
 ## Dynamic permissions from hooks (v2.1.84+)
 

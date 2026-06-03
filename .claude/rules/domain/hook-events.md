@@ -25,7 +25,7 @@ last_verified: 2026-05-27
 - PostToolUseFailure: fires when tool execution fails — use for error tracking
 - PostToolUse `continueOnBlock: true` (v2.1.139+) — when set in the hook config, a `decision: "block"` feeds the `reason` back to Claude and the turn continues instead of stopping. Use for non-fatal validators (lint, type-check, drift detection)
 - PostToolUse `hookSpecificOutput.updatedToolOutput` (v2.1.121+): replaces tool output for the model. Pre-v2.1.121 was MCP-only (`updatedMCPToolOutput`); now works for Bash, Edit, Write, Read, etc. Use sparingly — rewriting can hide errors and breaks audit trail
-- PostToolBatch (v2.1.x+): fires when a batch of parallel tool calls completes, before the next model call. No matcher. Blockable via `decision: "block"` — point of choice for end-of-batch validation
+- PostToolBatch (v2.1.x+): fires when a batch of parallel tool calls completes, before the next model call. No matcher. Blockable via `decision: "block"` — point of choice for end-of-batch validation. **v2.1.161 behavior change**: a failed Bash call in the batch no longer cancels the other parallel calls. Post-fix, the batch always sees ALL dispatched results regardless of individual failures. Hook logic that assumed atomicity ("if I see N results, all N succeeded") must inspect per-tool success/failure explicitly
 - UserPromptExpansion: fires when a slash command expands. Matcher: command name. Blockable — can prevent the expansion
 - UserPromptSubmit: hook can return `hookSpecificOutput.sessionTitle: "..."` (v2.1.94+) to set the session display title (shown in `/resume` and terminal title)
 - TaskCreated/TaskCompleted: agent lifecycle — use for orchestration metrics

@@ -67,6 +67,14 @@ Composition with global hooks: agent hooks **merge** with `.claude/settings.json
 - `claude_code.tool` spans carry the same attributes since v2.1.145 — pre-v2.1.145 tool spans lacked agent attribution
 - Trace parenting fixed in v2.1.145: background subagent spans correctly nest under the dispatching Agent tool span (before, they were roots — broke the agent-tree visualization)
 - Combined effect: distributed tracing of agent trees is now complete
+- **v2.1.161 metric label expansion**: `OTEL_RESOURCE_ATTRIBUTES` values are now included as labels on metric datapoints. Slice usage metrics by team, repo, or any custom dimension. Pre-fix only span attributes carried these — metrics were unsliceable.
+- **v2.1.161 tool parameter capture**: `tool_decision` events include `tool_parameters` when `OTEL_LOG_TOOL_DETAILS=1`. Opt-in: parameter values may contain secrets, so disabled by default. Use for forensic replay of denied tool calls.
+
+## Single-file grep satisfies read-before-edit (v2.1.160+)
+
+Single-file `grep`/`egrep`/`fgrep` now counts as having "read" the file for the Edit precondition. Pre-fix, even after grepping a file, an Edit would still trigger the "Read this file first" requirement. Multi-file searches still don't satisfy the check (no single file is considered fully read).
+
+Implication for `researcher` agent pattern: a focused grep for the target symbol in a specific file is sufficient context to hand off to `implementer` without an intermediate full Read — saves tokens on large files.
 
 ## Related: top-level parallelism
 

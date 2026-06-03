@@ -4,6 +4,47 @@
 >
 > Historial de versiones. Las entradas usan español/inglés mixto según la evolución del proyecto. Los términos técnicos son universales.
 
+## v3.13.0 (2026-06-03)
+
+### `/forge update` from 2026-06-03 watch — v2.1.158 → v2.1.161 coverage + ultracode policy refinements
+
+Processes 6 inbox practices from `/forge watch` 2026-06-03. 1 breaking-ish (workflow subagents bypass session permission mode), 4 medium, 1 low-priority bundle. All accepted, all incorporated.
+
+#### Security boundary clarification
+
+- **`domain/workflow-automation.md`** — new "Permission model" subsection: workflow subagents ALWAYS run in `acceptEdits` mode regardless of session permission mode (including `plan`). File edits auto-approved. Table mapping session mode → launch prompt → subagent edit behavior. Reinforces that `permissions.deny` is the only kernel-level backstop for production.
+- **`domain/workflow-and-ultracode-policy.md`** — new "Security boundary" section: production-tier policy assumption (plan-mode gates edits) holds for direct main-thread actions but NOT for workflow-spawned subagents. Audit checklist for `permissions.deny` paths.
+- **`domain/permission-model.md`** — `acceptEdits` row in 6-modes table now flagged with v2.1.160 exceptions. New "Paths that always prompt regardless of mode" section: shell rc files (`.zshenv`/`.zlogin`/`.bash_login`/`~/.config/git/`) always prompt; build-tool config (`.npmrc`/`.yarnrc*`/`bunfig.toml`/`.bazelrc`/`.pre-commit-config.yaml`/`.devcontainer/`) prompts in `acceptEdits` mode.
+- **`domain/sandboxing.md`** — new "Built-in safety prompts (Claude-Code-level, v2.1.160+)" section with concrete `denyWrite` example for defense-in-depth. Also documents the v2.1.149 → v2.1.161 workflow worktree isolation regression+fix.
+
+#### Workflow + ultracode refinements
+
+- **`domain/workflow-automation.md`** — three new subsections:
+  - "Bundled workflows" — `/deep-research <question>` ships built-in (v2.1.154+)
+  - Keyword trigger rename: `workflow` → `ultracode` (v2.1.160). Setting key `workflowKeywordTriggerEnabled` unchanged. Anti-confusion guidance.
+  - "Runtime activation: `/effort ultracode`" — session activator that combines xhigh + auto-workflow planning. Tier mapping table.
+- **`domain/workflow-and-ultracode-policy.md`** — new "Activation: tier (policy) → runtime" section. Production tier → `/effort ultracode` mandatory. Heavy tier → conditional. Closes the loop between dotforge tier system and upstream runtime activator.
+- **`domain/model-ids.md`** — Effort levels section: `ultracode` documented as 6th tier (Opus-only, runtime-activator that combines xhigh + auto-workflow orchestration).
+- **`template/hooks/session-startup.sh`** + **`.claude/hooks/session-startup.sh`** — tier brief made actionable: `production` recommends "Activate now: `/effort ultracode`"; `heavy` recommends activation for architecture/security tasks.
+
+#### Behavior changes documented
+
+- **`domain/hook-events.md`** — PostToolBatch: v2.1.161 batch-failure isolation. Failed Bash no longer cancels other parallel calls; hook must inspect per-tool success.
+- **`domain/auto-mode.md`** — Tool concurrency table addendum: batch-level vs kernel-level concurrency semantics (v2.1.161 changes batch-level).
+
+#### Small additions bundle (low priority, consolidated)
+
+- **`domain/auto-mode.md`** — `CLAUDE_CODE_ENABLE_AUTO_MODE=1` opt-in for Bedrock/Vertex/Foundry. Mantle added to enterprise platforms list (v2.1.161 changelog mention).
+- **`domain/auth.md`** + **`domain/permission-managed-settings.md`** — Mantle added to third-party providers in `forceLoginOrgUUID`/`forceLoginMethod` enforcement scope.
+- **`domain/permission-managed-settings.md`** — new bullet under MCP server config: `claude mcp list/get/add` no longer expands `${VAR}` in CLI output (v2.1.161 security fix).
+- **`domain/agent-orchestration.md`** — OpenTelemetry section extended: `OTEL_RESOURCE_ATTRIBUTES` as metric labels, `tool_decision` includes `tool_parameters` with `OTEL_LOG_TOOL_DETAILS=1`. New section: "Single-file grep satisfies read-before-edit (v2.1.160+)".
+- **`domain/parallel-sessions.md`** — `claude agents` rows show `done/total` (v2.1.161+).
+
+#### Practices lifecycle
+
+- 6 inbox → active (workflow-subagents-bypass-permission-mode, v2160-security-prompts-shell-rc, deep-research-bundled-workflow-and-effort-ultracode, v2160-keyword-rename-workflow-to-ultracode, v2161-posttoolbatch-failed-bash-no-cancel, v2158-v2161-small-additions-bundle)
+- `metrics.yml`: 6 entries added (4 monitoring — 2 security + 1 logic + 1 config; 2 informational)
+
 ## v3.12.1 (2026-06-02)
 
 ### Housekeeping — completar `/forge update` 2026-06-01 sin commitear

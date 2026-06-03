@@ -91,10 +91,10 @@ PY
 
 case "$ULTRACODE_TIER" in
     production)
-        ULTRACODE_REC="ON always. Multi-pass adversarial verify. Hard-gate: blocks merge on High findings."
+        ULTRACODE_REC="ON always. Activate now: \`/effort ultracode\`. Multi-pass adversarial verify. Hard-gate: blocks merge on High findings."
         ;;
     heavy)
-        ULTRACODE_REC="ON for architecture/security tasks. Workflow ON for multi-stage. Soft-gate."
+        ULTRACODE_REC="ON for architecture/security tasks (\`/effort ultracode\`). Workflow ON for multi-stage. Soft-gate."
         ;;
     light)
         ULTRACODE_REC="OFF default. Workflow only for explicit batch ops."

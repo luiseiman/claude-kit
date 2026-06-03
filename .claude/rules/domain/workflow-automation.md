@@ -106,10 +106,43 @@ NOT a barrier justification: "I need to flatten/filter first" → do it inside a
 
 Compose for thoroughness: adversarial verify (N skeptics try to refute; ≥majority refute → kill), perspective-diverse verify (correctness/security/perf lenses instead of N identical refuters), judge panel (independent attempts scored by parallel judges), loop-until-dry (K consecutive empty rounds = done), multi-modal sweep (each agent searches a different way), completeness critic (final "what's missing?" agent).
 
+### Permission model (security boundary)
+
+Workflow subagents **always run in `acceptEdits` mode regardless of the parent session's permission mode** (including `plan`). File edits are auto-approved. The session's permission mode controls ONLY the per-run launch prompt — once a workflow starts, every subagent it spawns edits files without prompting.
+
+| Session mode | Launch prompt | Subagent edits mid-run |
+|--------------|---------------|------------------------|
+| `default`, `acceptEdits` | every run (or remembered per-workflow consent) | auto-approved |
+| `auto` | first launch only; consent stored. **Skipped entirely when ultracode is on** | auto-approved |
+| `bypassPermissions`, `claude -p`, Agent SDK | never | auto-approved |
+| `plan` | every run | **auto-approved — plan mode does NOT gate workflow subagents** |
+
+Shell commands, web fetches, and MCP tools that aren't in the allowlist can still prompt mid-run; file edits cannot. `permissions.deny` (kernel-level + permission-cascade) still applies — for production projects, ensure `deny` covers sensitive paths (e.g. `migrations/`, `infrastructure/`, secrets).
+
+### Bundled workflows (v2.1.154+)
+
+Claude Code ships built-in workflows that appear in `/` autocomplete:
+
+| Command | What it does |
+|---------|--------------|
+| `/deep-research <question>` | Fans out web searches across angles, fetches and cross-checks sources, votes on each claim, returns a cited report with claims that didn't survive cross-checking filtered out. Requires WebSearch tool. |
+
+Workflows saved via `/workflows` → `s` shortcut become commands the same way and appear alongside the bundled ones. Save to `.claude/workflows/` (project, shared) or `~/.claude/workflows/` (personal). Project workflows shadow personal ones at the same name.
+
 ### Settings
 
 - `disableWorkflows: true` — kill switch (equivalent to `CLAUDE_CODE_DISABLE_WORKFLOWS=1`)
-- `workflowKeywordTriggerEnabled` (v2.1.157, default `true`) — controls whether literal word "workflow" in prompt triggers expansion. Turn off when team uses "workflow" generically
+- `workflowKeywordTriggerEnabled` (v2.1.157, default `true`) — controls whether the literal trigger keyword in prompt triggers expansion. **Keyword renamed v2.1.160**: pre-v2.1.160 = `workflow`, v2.1.160+ = `ultracode`. The setting key is unchanged — only the matched word. Natural-language requests ("use a workflow", "run a workflow") still trigger expansion in both versions. UI label in `/config` changed to "Ultracode keyword trigger".
+- Dismiss the highlighted keyword in-prompt: `Option+W` macOS / `Alt+W` Windows-Linux (or backspace while cursor is just after it)
+- **Anti-confusion** for dotforge ultracode-as-tier policy: when documenting "this project is ultracode tier", prefer `ultracode-tier`, `ultracode posture`, or `ultracode mode` over the bare word `ultracode` to avoid triggering accidental workflow expansion
+
+### Runtime activation: `/effort ultracode`
+
+`/effort ultracode` is the per-session activator that combines `xhigh` reasoning effort with automatic workflow orchestration for every substantive task. Session-only, resets on new session. Available only on models supporting `xhigh` (Opus 4.7 + 4.8).
+
+With it on, Claude plans a workflow for each substantive request — one user prompt can spawn several workflows in sequence (understand → change → verify). Launch prompts in `auto` mode are also skipped.
+
+Pairs with dotforge `workflow-and-ultracode-policy.md` tier mapping: `production` → `/effort ultracode` mandatory · `heavy` → `/effort ultracode` for architecture/security · `standard` → `/effort high` (default) · `light` → `/effort medium` or `high`.
 
 ### dotforge integration considerations
 

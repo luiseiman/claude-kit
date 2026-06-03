@@ -33,6 +33,25 @@ Two orthogonal concepts. Do not conflate.
 
 Default when `ultracode_tier` absent from registry: **standard**.
 
+## Activation: tier (policy) → runtime
+
+Tier is the project POSTURE (declared once in registry). `/effort ultracode` is the per-session ACTIVATOR (upstream v2.1.154+). Both must align — tier alone does not enforce anything at runtime.
+
+| Tier | Recommended runtime | Workflow trigger |
+|------|--------------------|-----------------|
+| `production` | `/effort ultracode` mandatory at session start | Auto + adversarial verify on every substantive task |
+| `heavy` | `/effort ultracode` for architecture/security tasks; `/effort high` (default) for routine | Auto for multi-stage; explicit `ultracode` keyword otherwise |
+| `standard` | `/effort high` (default since v2.1.94) | Only when explicitly requested (`ultracode` keyword or natural language) |
+| `light` | `/effort medium` or `high` | Skip workflows |
+
+`session-startup.sh` emits the tier in the startup brief. For tier `heavy` or `production`, treat the brief as a reminder to invoke `/effort ultracode` if not already on.
+
+## Security boundary — workflow subagents bypass session permission mode
+
+`production`-tier policy assumes plan-mode enforcement before irreversible edits. **This holds for direct main-thread actions but NOT for workflow-spawned subagents** — they always run in `acceptEdits` mode regardless of session mode. See `workflow-automation.md` § Permission model.
+
+Implication: production-tier projects MUST rely on `permissions.deny` (kernel-enforced + permission-cascade) as the real backstop for irreversible touches. Plan mode alone is not sufficient if any workflow is active. Audit `permissions.deny` to cover: `.env*`, `**/*.key`, `**/*.pem`, `**/credentials*`, plus project-specific paths (`migrations/`, `infrastructure/terraform/`, schema files).
+
 ## Portfolio guidance (12 projects, authoritative 2026-06-02)
 
 | Project | Tier | Justification |

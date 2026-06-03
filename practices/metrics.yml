@@ -1140,3 +1140,63 @@ practices:
     status: informational
     projects_applied: 0
     last_checked: null
+  - id: practice-2026-06-03-workflow-subagents-bypass-permission-mode
+    error_targeted: "production-tier project assumes plan-mode gates edits, but workflow subagents bypass session permission mode and auto-approve file writes"
+    error_type: security
+    activated: 2026-06-03
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: monitoring
+    projects_applied: 0
+    last_checked: null
+  - id: practice-2026-06-03-v2160-security-prompts-shell-rc
+    error_targeted: "acceptEdits silently writes to shell rc / build-tool config files leading to toolchain compromise"
+    error_type: security
+    activated: 2026-06-03
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: monitoring
+    projects_applied: 0
+    last_checked: null
+  - id: practice-2026-06-03-deep-research-bundled-workflow-and-effort-ultracode
+    error_targeted: null
+    error_type: null
+    activated: 2026-06-03
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: null
+  - id: practice-2026-06-03-v2160-keyword-rename-workflow-to-ultracode
+    error_targeted: "user types 'workflow' expecting trigger in v2.1.160+, or types 'ultracode' in CLAUDE.md as policy reference and accidentally triggers workflow"
+    error_type: config
+    activated: 2026-06-03
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: monitoring
+    projects_applied: 0
+    last_checked: null
+  - id: practice-2026-06-03-v2161-posttoolbatch-failed-bash-no-cancel
+    error_targeted: "PostToolBatch hook assumes batch atomicity (failed Bash cancels batch) but post-v2.1.161 sees ALL results regardless of individual failures"
+    error_type: logic
+    activated: 2026-06-03
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: monitoring
+    projects_applied: 0
+    last_checked: null
+  - id: practice-2026-06-03-v2158-v2161-small-additions-bundle
+    error_targeted: null
+    error_type: null
+    activated: 2026-06-03
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: null

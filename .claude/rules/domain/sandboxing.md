@@ -54,6 +54,31 @@ Implications:
 - Pre-v2.1.149: code running in a worktree had sandbox-blessed write access to most of the main repo's files
 - Post-v2.1.149: sandbox correctly limits writes to the worktree itself + the legitimate shared `.git` paths
 - Agent Teams patterns that relied on worktree teammates writing to main-repo files were exploiting the bug — verify and rework
+- **Workflow regression + fix (v2.1.149 → v2.1.161)**: the v2.1.149 scope correction was too strict for Workflow agents with `isolation: "worktree"` — they were blocked from editing files inside their OWN worktree. v2.1.161 restored correct scope: writes to the agent's own worktree are allowed, writes outside still denied. Only impacts users of `agent(prompt, {isolation: 'worktree'})` in `/workflows` scripts.
+
+## Built-in safety prompts (Claude-Code-level, v2.1.160+)
+
+Claude Code itself prompts before writing to shell startup files (`.zshenv`, `.zlogin`, `.bash_login`, `~/.config/git/`) and build-tool config (`.npmrc`, `.yarnrc*`, `bunfig.toml`, `.bazelrc`, `.pre-commit-config.yaml`, `.devcontainer/` — the build-tool list applies only in `acceptEdits` mode). See `permission-model.md` § Paths that always prompt.
+
+These are NOT sandbox-level — they are Claude-Code-level UX prompts, suppressed only by `bypassPermissions`. For defense-in-depth that survives `bypassPermissions`, `claude -p`, and Agent SDK, use `sandbox.filesystem.denyWrite` to enforce at kernel level:
+
+```json
+{
+  "sandbox": {
+    "enabled": true,
+    "filesystem": {
+      "denyWrite": [
+        "~/.zshenv", "~/.zlogin", "~/.bash_login",
+        "~/.config/git",
+        ".npmrc", ".yarnrc", ".yarnrc.yml",
+        "bunfig.toml", ".bazelrc",
+        ".pre-commit-config.yaml",
+        ".devcontainer"
+      ]
+    }
+  }
+}
+```
 
 ## PowerShell execution policy bypass (v2.1.143+)
 

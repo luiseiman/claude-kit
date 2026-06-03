@@ -84,3 +84,21 @@ A project with `behaviors/index.yaml` declaring `enabled: true` for several beha
 - 1: `sandbox.enabled: true` with at least `network.allowedDomains` OR `filesystem.denyRead` covering the project's sensitive paths — OR project demonstrably handles no secrets (automatic pass)
 
 **Verification:** Parse `settings.json` for `sandbox.enabled`. If true, verify at least one filesystem or network restriction is configured. If false, scan project for indicators of secret handling: presence of `.env*`, `credentials*`, `*.key`, `*.pem`, or references to cloud CLIs (`gcloud`, `aws`, `kubectl`) in scripts. Projects without secrets auto-pass. Not applicable on Windows native (WSL2 only). See `.claude/rules/domain/sandboxing.md`.
+
+### 16. Workflow availability (v4, 0-1)
+- 0: No `workflows/` directory OR directory empty
+- 1: `workflows/` directory exists with at least one `.js` file containing an `export const meta` block
+
+**Verification:** `ls workflows/*.js 2>/dev/null` returns at least one file; `grep -q "export const meta" workflows/*.js` confirms valid workflow shape. Score is deliberately low (1 point) — workflow presence is a governance signal, not a quality measure. Bash skills remain the workhorse. See `docs/v4/SPEC.md`.
+
+### 17. Override capture loop active (v4, 0-1)
+- 0: `.forge/audit/overrides.log` not tracked OR `process-override-log.sh` not wired in SessionStart
+- 1: Both present: log file exists AND the hook is referenced in `.claude/settings.json` SessionStart hooks
+
+**Verification:**
+```bash
+test -f .forge/audit/overrides.log && \
+  grep -q "session-start-process-overrides.sh" .claude/settings.json
+```
+
+Projects that have not opted into v3 behavior governance (no `behaviors/` directory) auto-pass. The override loop is meaningful only when behaviors are active and may generate soft_block overrides. See `scripts/process-override-log.sh` and `docs/v4/SPEC.md`.

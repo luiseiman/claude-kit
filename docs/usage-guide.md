@@ -391,7 +391,13 @@ Each stack provides:
 
 ## 7. Audit system
 
-### Checklist (15 items)
+### Two dimensions
+
+The audit produces two independent numbers:
+- **A — Native Health** (0-10): good use of native Claude Code + security. The primary score.
+- **B — dotforge Adoption** (0-5): how much dotforge governance the project adopted. **Informational — does not affect Native Health.** A native-first project scoring B=0 with A=10 is a desirable outcome.
+
+### Dimension A — Native Health (15 items)
 
 #### Required (0-2 points each, 70% weight)
 
@@ -403,29 +409,41 @@ Each stack provides:
 | 4 | **Hook block-destructive** | Does not exist | Exists but misconfigured | Exists + executable + wired in settings.json |
 | 5 | **Build/test commands** | Not documented | In README but not in CLAUDE.md | Documented in CLAUDE.md with exact commands |
 
-#### Recommended (0-1 point each, 30% weight)
+#### Recommended (0-1 point each, 30% weight) — native Claude Code usage
 
 | # | Item | Criteria |
 |---|------|----------|
-| 6 | CLAUDE_ERRORS.md | Exists with table format and valid types |
-| 7 | Lint hook | Configured for the stack + executable |
-| 8 | Custom commands | At least 1 relevant command |
-| 9 | Project memory | Exists with useful context |
-| 10 | Agents | Installed + active orchestration rule |
-| 11 | .gitignore | Protects .env, *.key, *.pem, credentials |
-| 12 | Prompt injection scan | No suspicious patterns in rules/CLAUDE.md |
-| 13 | Auto-mode safety | Allow rules use specific tool commands, not interpreter patterns |
-| 14 | Behaviors coverage (v3) | At least 1 behavior enabled in `behaviors/index.yaml` or compiled hook under `.claude/hooks/generated/` |
-| 15 | OS-level sandboxing | `sandbox.enabled` with filesystem/network restrictions, or project handles no secrets (auto-pass) |
+| 6 | .gitignore | Protects .env, *.key, *.pem, credentials |
+| 7 | Prompt injection scan | No suspicious patterns in rules/CLAUDE.md |
+| 8 | Auto-mode safety | Allow rules use specific tool commands, not interpreter patterns |
+| 9 | OS-level sandboxing | `sandbox.enabled` with filesystem/network restrictions, or project handles no secrets (auto-pass) |
+| 10 | Lint hook | Configured for the stack + executable |
+| 11 | **Auto-memory well used** | `MEMORY.md` is a concise index (<200 lines AND <25KB), not a dump; `CLAUDE_ERRORS.md` with Type column if errors tracked |
+| 12 | **Permission cascade** | Machine-local overrides in `settings.local.json`, not in versioned `settings.json` (auto-pass if none needed) |
+| 13 | **Attribution configured** | `attribution.commit`/`attribution.pr` set (not deprecated `includeCoAuthoredBy`); auto-pass if default acceptable |
+| 14 | Custom commands | At least 1 relevant command |
+| 15 | Agents | Installed + active orchestration rule |
+
+### Dimension B — dotforge Adoption (5 items, informational)
+
+| # | Item | Criteria |
+|---|------|----------|
+| B1 | v3 behaviors compiled | Compiled hook under `.claude/hooks/generated/` AND wired in settings.json |
+| B2 | Workflow availability | `workflows/` with at least one `.js` containing `export const meta` |
+| B3 | Override capture loop | `.forge/audit/overrides.log` + `session-start-process-overrides.sh` wired in SessionStart |
+| B4 | Domain rules | At least one rule in `.claude/rules/domain/` (freshness checked semantically) |
+| B5 | Sync recency | Project `dotforge_version` == current `VERSION` |
 
 ### Scoring formula
 
 ```
-score = required x 0.7 + recommended x (3.0 / 10)
+native_health = required x 0.7 + recommended x 0.3      # 0-10, the primary score
+forge_adoption = sum(B1..B5)                            # 0-5, informational
 ```
 
 - Perfect required items without recommended = **7.0** (Good)
 - Each recommended item contributes 0.3 — to reach 9+ you need at least 7 recommended items
+- `forge_adoption` never affects `native_health`
 
 ### Security cap
 

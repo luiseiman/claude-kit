@@ -2,7 +2,9 @@
 """Audit all projects listed in registry/projects.local.yml against audit/checklist.md.
 
 Deterministic, script-based alternative to running the /audit-project skill 12 times.
-Walks each project path, scores the 15 checklist items, and updates the registry.
+Two-dimension model (v4.x):
+  - Native Health (score, 0-10): 5 obligatory + 10 recommended native-usage items.
+  - dotforge Adoption (forge_adoption, 0-5): informational, does not affect score.
 
 Usage: python3 scripts/audit_all.py [--dry-run]
 """
@@ -25,9 +27,6 @@ REGISTRY = DOTFORGE / "registry/projects.local.yml"
 VERSION_FILE = DOTFORGE / "VERSION"
 TODAY = date.today().isoformat()
 
-# Prompt-injection patterns — tuned to avoid false positives on CLI placeholders.
-# Standalone <word> in docs (e.g. `/compact <instructions>`) is NOT flagged.
-# We require either a matching close-tag OR a hijack phrase.
 INJECTION_PHRASES = [
     r"ignore previous",
     r"IGNORE ALL",
@@ -76,11 +75,12 @@ def scan_injection(texts: list[str]) -> tuple[bool, str]:
     return False, ""
 
 
-def audit(proj_path: Path, name: str) -> dict:
-    r = {"name": name, "path": str(proj_path), "items": {}, "notes": []}
+def audit(proj_path: Path, name: str, version: str, prev_version) -> dict:
+    r = {"name": name, "path": str(proj_path), "items": {}, "adoption": {}, "notes": []}
     claude_md = proj_path / "CLAUDE.md"
     claude_dir = proj_path / ".claude"
     settings_json = claude_dir / "settings.json"
+    settings_local = claude_dir / "settings.local.json"
     hooks_dir = claude_dir / "hooks"
     rules_dir = claude_dir / "rules"
     commands_dir = claude_dir / "commands"
@@ -88,6 +88,8 @@ def audit(proj_path: Path, name: str) -> dict:
     errors_md = proj_path / "CLAUDE_ERRORS.md"
     manifest = claude_dir / ".forge-manifest.json"
     gitignore = proj_path / ".gitignore"
+
+    # ── DIMENSION A — obligatory (0-2) ──
 
     # Item 1: CLAUDE.md
     if not claude_md.exists():
@@ -146,8 +148,7 @@ def audit(proj_path: Path, name: str) -> dict:
         has_push = "--force" in content
         wired = False
         if s:
-            hooks = s.get("hooks", {})
-            wired = "block-destructive" in json.dumps(hooks)
+            wired = "block-destructive" in json.dumps(s.get("hooks", {}))
         if executable and wired and has_rm and has_drop and has_push:
             r["items"]["4_block_destructive"] = 2
         else:
@@ -171,56 +172,19 @@ def audit(proj_path: Path, name: str) -> dict:
     else:
         r["items"]["5_build_test"] = 0
 
-    # Item 6: CLAUDE_ERRORS.md (accept English or Spanish headers)
-    if errors_md.exists():
-        t = read_text(errors_md)
-        has_type = bool(re.search(r"\b(Type|Tipo)\b", t)) and bool(re.search(
-            r"\b(syntax|logic|integration|config|security)\b", t, re.I))
-        r["items"]["6_errors_md"] = 1 if has_type else 0
-    else:
-        r["items"]["6_errors_md"] = 0
+    # ── DIMENSION A — recommended (0-1): native Claude Code usage ──
 
-    # Item 7: lint hook
-    lint_hooks = list(hooks_dir.glob("*lint*.sh")) if hooks_dir.exists() else []
-    r["items"]["7_lint_hook"] = 1 if any(test_x(h) for h in lint_hooks) else 0
-
-    # Item 8: custom commands
-    cmd_files = list(commands_dir.glob("*.md")) if commands_dir.exists() else []
-    r["items"]["8_commands"] = 1 if cmd_files else 0
-
-    # Item 9: project memory
-    mem_candidates = [
-        claude_dir / "MEMORY.md",
-        claude_dir / "agent-memory",
-        proj_path / "MEMORY.md",
-    ]
-    has_mem = False
-    for m in mem_candidates:
-        if m.is_dir() and any(m.iterdir()):
-            has_mem = True
-            break
-        if m.is_file() and m.stat().st_size > 100:
-            has_mem = True
-            break
-    r["items"]["9_memory"] = 1 if has_mem else 0
-
-    # Item 10: agents
-    agent_files = list(agents_dir.glob("*.md")) if agents_dir.exists() else []
-    agents_rule = (rules_dir / "agents.md") if rules_dir.exists() else None
-    has_agents = bool(agent_files) and agents_rule and agents_rule.exists()
-    r["items"]["10_agents"] = 1 if has_agents else 0
-
-    # Item 11: .gitignore
+    # Item 6: .gitignore
     if gitignore.exists():
         g = read_text(gitignore)
         has_env = bool(re.search(r"^\.env", g, re.M))
         has_keys = bool(re.search(r"\*\.key|\*\.pem", g))
         has_creds = bool(re.search(r"credentials", g, re.I))
-        r["items"]["11_gitignore"] = 1 if (has_env and (has_keys or has_creds)) else 0
+        r["items"]["6_gitignore"] = 1 if (has_env and (has_keys or has_creds)) else 0
     else:
-        r["items"]["11_gitignore"] = 0
+        r["items"]["6_gitignore"] = 0
 
-    # Item 12: prompt-injection scan
+    # Item 7: prompt-injection scan
     scan_paths = []
     if rules_dir.exists():
         scan_paths.extend(rules_dir.glob("**/*.md"))
@@ -230,9 +194,9 @@ def audit(proj_path: Path, name: str) -> dict:
     found, reason = scan_injection(texts)
     if found:
         r["notes"].append(f"injection: {reason}")
-    r["items"]["12_injection"] = 0 if found else 1
+    r["items"]["7_injection"] = 0 if found else 1
 
-    # Item 13: auto-mode safety
+    # Item 8: auto-mode safety
     if s:
         mode = s.get("permissions", {}).get("defaultMode", "")
         if mode == "auto":
@@ -240,20 +204,13 @@ def audit(proj_path: Path, name: str) -> dict:
             denies_secrets = sum(
                 1 for d in deny if re.search(r"\.env|\*\.key|\*\.pem|credentials", str(d), re.I)
             ) >= 3
-            r["items"]["13_auto_safe"] = 1 if denies_secrets else 0
+            r["items"]["8_auto_safe"] = 1 if denies_secrets else 0
         else:
-            r["items"]["13_auto_safe"] = 1  # auto mode not enabled — auto-pass
+            r["items"]["8_auto_safe"] = 1  # auto mode not enabled — auto-pass
     else:
-        r["items"]["13_auto_safe"] = 0
+        r["items"]["8_auto_safe"] = 1  # no settings — auto mode not enabled
 
-    # Item 14: v3 behaviors
-    gen_dir = hooks_dir / "generated"
-    gen_hooks = list(gen_dir.glob("*__pretooluse__*.sh")) if gen_dir.exists() else []
-    beh_idx = proj_path / "behaviors/index.yaml"
-    has_beh = bool(gen_hooks) or beh_idx.exists()
-    r["items"]["14_behaviors"] = 1 if has_beh else 0
-
-    # Item 15: sandbox / env-scrub auto-pass
+    # Item 9: sandbox / env-scrub auto-pass
     sandbox_on = False
     env_scrub = False
     if s:
@@ -265,9 +222,9 @@ def audit(proj_path: Path, name: str) -> dict:
         fs = s.get("sandbox", {}).get("filesystem", {})
         net = s.get("sandbox", {}).get("network", {})
         has_restriction = bool(fs.get("denyRead") or fs.get("allowWrite") or net.get("allowedDomains"))
-        r["items"]["15_sandbox"] = 1 if has_restriction else 0
+        r["items"]["9_sandbox"] = 1 if has_restriction else 0
     elif env_scrub:
-        r["items"]["15_sandbox"] = 1  # env-scrub is acceptable defense-in-depth
+        r["items"]["9_sandbox"] = 1  # env-scrub is acceptable defense-in-depth
     else:
         has_secrets = False
         for pat in (".env", ".env.local", "credentials.json", "key.pem"):
@@ -280,24 +237,118 @@ def audit(proj_path: Path, name: str) -> dict:
             if re.search(r"\b(gcloud|aws|kubectl|terraform)\b", t):
                 shell_refs = True
                 break
-        r["items"]["15_sandbox"] = 0 if (has_secrets or shell_refs) else 1
+        r["items"]["9_sandbox"] = 0 if (has_secrets or shell_refs) else 1
 
-    # Score calculation
-    mand = sum(r["items"][f"{i}_{k}"] for i, k in [
-        (1, "claude_md"), (2, "settings"), (3, "rules"),
-        (4, "block_destructive"), (5, "build_test")
-    ])
-    rec = sum(r["items"][f"{i}_{k}"] for i, k in [
-        (6, "errors_md"), (7, "lint_hook"), (8, "commands"), (9, "memory"),
-        (10, "agents"), (11, "gitignore"), (12, "injection"),
-        (13, "auto_safe"), (14, "behaviors"), (15, "sandbox")
-    ])
+    # Item 10: lint hook
+    lint_hooks = list(hooks_dir.glob("*lint*.sh")) if hooks_dir.exists() else []
+    r["items"]["10_lint_hook"] = 1 if any(test_x(h) for h in lint_hooks) else 0
+
+    # Item 11: auto-memory well used (index hygiene + error log)
+    errlog = 0
+    if errors_md.exists():
+        t = read_text(errors_md)
+        if re.search(r"\b(Type|Tipo)\b", t) and re.search(
+                r"\b(syntax|logic|integration|config|security)\b", t, re.I):
+            errlog = 2
+        else:
+            errlog = 1
+    mem_present = False
+    mem_dump = False
+    for mf in (claude_dir / "MEMORY.md", proj_path / "MEMORY.md"):
+        if mf.is_file():
+            mem_present = True
+            txt = read_text(mf)
+            lines = txt.count("\n") + 1
+            if lines > 200 or mf.stat().st_size > 25600:
+                mem_dump = True
+            break
+    agmem_dir = claude_dir / "agent-memory"
+    agmem = bool(agmem_dir.is_dir() and any(
+        f.name != ".gitkeep" for f in agmem_dir.glob("**/*.md")))
+    if mem_dump:
+        r["items"]["11_auto_memory"] = 0
+        r["notes"].append("MEMORY.md is a dump (>200 lines/25KB)")
+    elif errlog >= 1 or agmem or mem_present:
+        r["items"]["11_auto_memory"] = 1
+    else:
+        r["items"]["11_auto_memory"] = 0
+
+    # Item 12: permission cascade (machine-local overrides in settings.local.json)
+    if settings_local.exists():
+        r["items"]["12_permission_cascade"] = 1
+    elif s and re.search(r"/Users/|/home/[a-z]", json.dumps(s)):
+        r["items"]["12_permission_cascade"] = 0
+        r["notes"].append("machine paths in versioned settings.json")
+    else:
+        r["items"]["12_permission_cascade"] = 1  # no local overrides needed
+
+    # Item 13: attribution configured (not deprecated includeCoAuthoredBy)
+    if s and "includeCoAuthoredBy" in json.dumps(s):
+        r["items"]["13_attribution"] = 0
+        r["notes"].append("deprecated includeCoAuthoredBy")
+    else:
+        r["items"]["13_attribution"] = 1  # attribution.* set, or default acceptable
+
+    # Item 14: custom commands
+    cmd_files = list(commands_dir.glob("*.md")) if commands_dir.exists() else []
+    r["items"]["14_commands"] = 1 if cmd_files else 0
+
+    # Item 15: agents
+    agent_files = list(agents_dir.glob("*.md")) if agents_dir.exists() else []
+    agents_rule = (rules_dir / "agents.md") if rules_dir.exists() else None
+    has_agents = bool(agent_files) and agents_rule and agents_rule.exists()
+    r["items"]["15_agents"] = 1 if has_agents else 0
+
+    # ── DIMENSION B — dotforge Adoption (0-1 each, informational) ──
+
+    # B1: behaviors compiled AND wired
+    gen_dir = hooks_dir / "generated"
+    gen_hooks = list(gen_dir.glob("*__pretooluse__*.sh")) if gen_dir.exists() else []
+    wired_beh = bool(s and re.search(r"generated|__pretooluse__", json.dumps(s.get("hooks", {}))))
+    r["adoption"]["B1_behaviors"] = 1 if (gen_hooks and wired_beh) else 0
+
+    # B2: workflow availability
+    wf_dir = proj_path / "workflows"
+    wf_files = list(wf_dir.glob("*.js")) if wf_dir.exists() else []
+    r["adoption"]["B2_workflows"] = 1 if any(
+        "export const meta" in read_text(f, 5000) for f in wf_files) else 0
+
+    # B3: override capture loop
+    override_log = proj_path / ".forge/audit/overrides.log"
+    wired_override = bool(s and "session-start-process-overrides.sh" in json.dumps(s))
+    r["adoption"]["B3_override_loop"] = 1 if (override_log.exists() and wired_override) else 0
+
+    # B4: domain rules
+    domain_dir = rules_dir / "domain"
+    domain_rules = list(domain_dir.glob("*.md")) if domain_dir.exists() else []
+    r["adoption"]["B4_domain_rules"] = 1 if domain_rules else 0
+
+    # B5: sync recency — project version matches current dotforge VERSION
+    r["adoption"]["B5_sync_recency"] = 1 if (prev_version and str(prev_version) == version) else 0
+
+    # ── Score calculation ──
+    mand = sum(r["items"][k] for k in (
+        "1_claude_md", "2_settings", "3_rules", "4_block_destructive", "5_build_test"))
+    rec = sum(r["items"][k] for k in (
+        "6_gitignore", "7_injection", "8_auto_safe", "9_sandbox", "10_lint_hook",
+        "11_auto_memory", "12_permission_cascade", "13_attribution", "14_commands", "15_agents"))
     total = mand * 0.7 + rec * 0.3
     if r["items"]["2_settings"] == 0 or r["items"]["4_block_destructive"] == 0:
         total = min(total, 6.0)
+    adoption = sum(r["adoption"].values())
+    if adoption == 0:
+        label = "None"
+    elif adoption <= 2:
+        label = "Partial"
+    elif adoption <= 4:
+        label = "Most"
+    else:
+        label = "Full"
     r["mand"] = mand
     r["rec"] = rec
-    r["score"] = round(total, 2)
+    r["score"] = round(total, 2)          # native_health (registry-compatible key)
+    r["forge_adoption"] = adoption
+    r["adoption_label"] = label
     r["manifest_present"] = manifest.exists()
     return r
 
@@ -319,28 +370,28 @@ def main() -> int:
         if not p.exists():
             print(f"SKIP: {proj['name']} — path not found: {p}")
             continue
-        r = audit(p, proj["name"])
+        r = audit(p, proj["name"], version, proj.get("dotforge_version"))
         r["prev_score"] = proj.get("score")
         r["prev_version"] = proj.get("dotforge_version")
         results.append(r)
 
-    print(f"\n{'Project':<20} {'Mand':>6} {'Rec':>6} {'Prev':>5} {'New':>5} {'Δ':>6} {'Baseline':>10} {'Notes'}")
-    print("─" * 100)
+    print(f"\n{'Project':<20} {'Mand':>6} {'Rec':>6} {'Prev':>5} {'Health':>6} {'Δ':>6} {'Adopt':>7} {'Notes'}")
+    print("─" * 104)
     for r in results:
         prev = r.get("prev_score") or 0
         delta = r["score"] - prev
         delta_s = f"{delta:+.2f}" if prev else "  new"
-        baseline = "manifest" if r["manifest_present"] else "none"
+        adopt = f"{r['forge_adoption']}/5 {r['adoption_label'][:4]}"
         notes = ", ".join(r["notes"][:2]) if r["notes"] else ""
         print(
             f"{r['name']:<20} {r['mand']:>3}/10 {r['rec']:>3}/10 "
-            f"{prev:>5.1f} {r['score']:>5.2f} {delta_s:>6} {baseline:>10}  {notes[:40]}"
+            f"{prev:>5.1f} {r['score']:>6.2f} {delta_s:>6} {adopt:>7}  {notes[:34]}"
         )
 
     avg = sum(r["score"] for r in results) / len(results)
     perfect = sum(1 for r in results if r["score"] >= 9.0)
     need_attn = sum(1 for r in results if r["score"] < 9.0)
-    print(f"\n{len(results)} projects | avg {avg:.2f} | {perfect} perfect (≥9) | {need_attn} need attention")
+    print(f"\n{len(results)} projects | avg health {avg:.2f} | {perfect} perfect (≥9) | {need_attn} need attention")
 
     print()
     for r in results:
@@ -358,10 +409,12 @@ def main() -> int:
         for r in results:
             if proj["name"] == r["name"]:
                 hist = proj.setdefault("history", [])
-                hist.append({"date": TODAY, "score": r["score"], "version": version})
+                hist.append({"date": TODAY, "score": r["score"],
+                             "adoption": r["forge_adoption"], "version": version})
                 proj["history"] = hist[-8:]
                 proj["last_audit"] = TODAY
                 proj["score"] = r["score"]
+                proj["forge_adoption"] = r["forge_adoption"]
                 proj["dotforge_version"] = version
                 break
 

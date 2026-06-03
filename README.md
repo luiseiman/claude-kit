@@ -39,7 +39,7 @@ For people and teams managing more than one Claude Code project.
 - **`scripts/process-override-log.sh`** — bash script that processes `.forge/audit/overrides.log` and auto-creates `practices/inbox/auto-override-*.md` for behaviors overridden ≥3 times in 30 days. Idempotent. 10/10 tests green. Cost: 0 LLM calls, pure bash.
 - **`session-start-process-overrides.sh`** wired in `SessionStart` (template + self-hosting) — auto-captures frequent overrides as practices on every session start.
 - **`scripts/migrate-v3-to-v4.sh`** — safe migration script with mandatory `--dry-run`, atomic backup, `--rollback`. See [`docs/v4/MIGRATION-V3-TO-V4.md`](docs/v4/MIGRATION-V3-TO-V4.md).
-- **Audit checklist items 16-17** — workflow availability + override loop active. Score impact: v3-perfect projects report ~9.5/10 v4 until migrated.
+- **Audit two-dimension model** — **Native Health** (0-10: native Claude Code usage + security) + **dotforge Adoption** (0-5: informational, does not affect the score). Behaviors / workflows / override-loop moved to the non-penalizing Adoption dimension — native-first projects no longer lose points for skipping dotforge machinery. New Native-Health items: auto-memory hygiene, permission cascade, attribution.
 - **`domain/workflow-economics.md`** (new domain rule) — documents v4 PoC cost-quality findings. Decision matrix: when workflow vs skill. Token economy principles. **TL;DR: workflows are 4-25x more expensive than bash skills for recurring work — use only as on-demand escalation, not as default refactor.**
 - **`workflows/watch.js`** ships as REFERENCE implementation, NOT promoted to `/forge watch` default. The bash skill remains the production tool.
 
@@ -213,7 +213,7 @@ dotforge/
 ├── mcp/            # MCP server templates (github, postgres, supabase, redis, slack)
 ├── behaviors/      # v3 declarative policies (index.yaml + one dir per behavior)
 ├── scripts/        # v3 runtime, compiler, and /forge behavior CLI
-├── audit/          # Checklist (15 items) + scoring normalized to 10
+├── audit/          # Native Health (15 items, 0-10) + dotforge Adoption (5 items, informational)
 ├── practices/      # Pipeline: inbox → evaluating → active → deprecated
 ├── global/         # Global ~/.claude/ management (CLAUDE.md, settings, sync.sh)
 ├── registry/       # Project tracking with scores and history

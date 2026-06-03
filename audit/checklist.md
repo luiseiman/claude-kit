@@ -1,5 +1,14 @@
 # Checklist de Auditoría dotforge
 
+El audit tiene **dos dimensiones independientes**:
+
+- **A — Salud Nativa** (score 0-10): ¿el proyecto usa bien Claude Code nativo + seguridad? Es el score que importa para cualquier proyecto, use o no la maquinaria dotforge.
+- **B — Adopción dotforge** (informativo 0-5): ¿cuánto adoptó la gobernanza dotforge? **NO penaliza** la Salud Nativa. Un proyecto native-first puro saca 0/5 acá sin perder un punto en A.
+
+---
+
+# Dimensión A — Salud Nativa (score 0-10)
+
 ## Obligatorio (cada item: 0-2 puntos, total máximo: 10)
 
 ### 1. CLAUDE.md (0-2)
@@ -7,7 +16,7 @@
 - 1: Existe pero <20 líneas útiles O falta alguna sección clave
 - 2: Completo — incluye **todas** estas secciones: stack/tecnologías, arquitectura/estructura, comandos build/test exactos, convenciones
 
-**Verificación:** No contar líneas vacías ni comentarios. Buscar presencia explícita de: nombre del stack, al menos 1 comando build/test, estructura de directorios o descripción de arquitectura.
+**Verificación:** No contar líneas vacías ni comentarios. Buscar presencia explícita de: nombre del stack, al menos 1 comando build/test, estructura de directorios o descripción de arquitectura. `/init` nativo genera la base; score 2 exige que esté completo.
 
 ### 2. .claude/settings.json (0-2)
 - 0: No existe
@@ -33,72 +42,94 @@
 
 ## Recomendado (cada item: 0-1 punto, total máximo: 10)
 
-### 6. CLAUDE_ERRORS.md
-- 0: No existe
-- 1: Existe con formato para registrar errores (tabla con columna Type: syntax|logic|integration|config|security)
-
-### 7. Hook de lint automático
-- 0: No hay lint post-write
-- 1: Hook de lint configurado para el stack del proyecto Y es ejecutable (`chmod +x`)
-
-### 8. Comandos custom (.claude/commands/)
-- 0: No hay comandos custom
-- 1: Al menos 1 comando custom relevante al proyecto
-
-### 9. Memory del proyecto
-- 0: No hay archivos de memoria
-- 1: Existe memoria con contexto útil del proyecto
-
-### 10. Agentes de orquestación
-- 0: No hay .claude/agents/ ni regla agents.md
-- 1: Agentes instalados + regla de orquestación activa en .claude/rules/
-
-### 11. .gitignore protege secrets
+### 6. .gitignore protege secrets
 - 0: No hay .gitignore o no protege .env/secrets
 - 1: .gitignore incluye .env, *.key, *.pem, credentials
 
-### 12. Prompt injection scan
+### 7. Prompt injection scan
 - 0: Rules or CLAUDE.md contain suspicious patterns (prompt injection risk)
 - 1: No suspicious patterns detected
 
 **Verification:** Scan `.claude/rules/`, `CLAUDE.md`, and any `*.md` in `.claude/` for patterns: `ignore previous`, `system:`, `<system>`, `</system>`, `<instructions>`, encoded payloads (base64 inline blocks), `IGNORE ALL`, `disregard`, `override instructions`. If any match → score 0 with explicit warning.
 
-### 13. Auto mode safety (0-1)
+### 8. Auto mode safety (0-1)
 - 0: Auto mode enabled without deny list covering .env, *.key, *.pem, *credentials*
 - 1: Auto mode enabled WITH complete deny list OR auto mode not enabled
 
-**Verification:** Check if `permissions.defaultMode` is set to `"auto"` in settings.json. If yes, verify deny list covers secrets. If auto mode is not enabled (default), automatic pass.
+**Verification:** Check if `permissions.defaultMode` is `"auto"` in settings.json. If yes, verify deny list covers secrets. If not enabled (default), automatic pass.
 
-### 14. Behaviors coverage (v3) (0-1)
-- 0: No v3 behaviors enforced — declaration in `behaviors/index.yaml` alone DOES NOT count
-- 1: At least one v3 behavior compiled to a runtime hook under `.claude/hooks/generated/` AND referenced in `settings.json` so the harness actually loads it
-
-**Verification:** Score reflects ENFORCEMENT, not intent. Required evidence:
-1. `.claude/hooks/generated/*__pretooluse__*.sh` (or matching event suffix) exists for at least one behavior — proof the YAML compiled
-2. `settings.json` references the generated hook path (auto-injected by `/forge behavior on` or merged from a `*.settings.json` snippet)
-
-A project with `behaviors/index.yaml` declaring `enabled: true` for several behaviors but no compiled hooks scores **0**. Compilation without the settings.json reference also scores 0 — the harness does not auto-load generated hooks. To diagnose: `ls .claude/hooks/generated 2>/dev/null` and `grep generated .claude/settings.json`. A project that has not opted into the v3 behavior governance layer scores 0 — this does not apply the security cap.
-
-### 15. OS-level sandboxing (0-1)
+### 9. OS-level sandboxing (0-1)
 - 0: Project handles secrets (env vars, credentials, API keys, cloud configs) with no `sandbox.enabled` in settings.json
-- 1: `sandbox.enabled: true` with at least `network.allowedDomains` OR `filesystem.denyRead` covering the project's sensitive paths — OR project demonstrably handles no secrets (automatic pass)
+- 1: `sandbox.enabled: true` with at least `network.allowedDomains` OR `filesystem.denyRead` covering sensitive paths — OR project demonstrably handles no secrets (automatic pass)
 
-**Verification:** Parse `settings.json` for `sandbox.enabled`. If true, verify at least one filesystem or network restriction is configured. If false, scan project for indicators of secret handling: presence of `.env*`, `credentials*`, `*.key`, `*.pem`, or references to cloud CLIs (`gcloud`, `aws`, `kubectl`) in scripts. Projects without secrets auto-pass. Not applicable on Windows native (WSL2 only). See `.claude/rules/domain/sandboxing.md`.
+**Verification:** Parse `settings.json` for `sandbox.enabled`. If true, verify at least one filesystem or network restriction. If false, scan for secret indicators (`.env*`, `credentials*`, `*.key`, `*.pem`, cloud CLIs). Projects without secrets auto-pass. Not applicable on Windows native (WSL2 only). See `.claude/rules/domain/sandboxing.md`.
 
-### 16. Workflow availability (v4, 0-1)
-- 0: No `workflows/` directory OR directory empty
-- 1: `workflows/` directory exists with at least one `.js` file containing an `export const meta` block
+### 10. Hook de lint automático
+- 0: No hay lint post-write
+- 1: Hook de lint configurado para el stack del proyecto Y es ejecutable (`chmod +x`)
 
-**Verification:** `ls workflows/*.js 2>/dev/null` returns at least one file; `grep -q "export const meta" workflows/*.js` confirms valid workflow shape. Score is deliberately low (1 point) — workflow presence is a governance signal, not a quality measure. Bash skills remain the workhorse. See `docs/v4/SPEC.md`.
+### 11. Auto-memory bien usado (0-1)
+- 0: No hay memoria de proyecto, O MEMORY.md es un dump (>200 líneas o >25KB — se trunca, contenido invisible)
+- 1: Memoria nativa bien estructurada: `MEMORY.md` es un índice conciso de punteros (<200 líneas Y <25KB), con archivos de memoria enlazados. Si el proyecto rastrea errores, `CLAUDE_ERRORS.md` existe con formato de tabla (columna Type: syntax|logic|integration|config|security)
 
-### 17. Override capture loop active (v4, 0-1)
-- 0: `.forge/audit/overrides.log` not tracked OR `process-override-log.sh` not wired in SessionStart
-- 1: Both present: log file exists AND the hook is referenced in `.claude/settings.json` SessionStart hooks
+**Verificación:** Contar líneas y bytes de `MEMORY.md`. Penalizar el anti-patrón de volcar contenido en el índice (regla nativa: solo las primeras 200 líneas / 25KB se inyectan por sesión). Ver `.claude/rules/domain/context-window-optimization.md`.
 
-**Verification:**
-```bash
-test -f .forge/audit/overrides.log && \
-  grep -q "session-start-process-overrides.sh" .claude/settings.json
-```
+### 12. Permission cascade (0-1)
+- 0: Overrides locales mezclados en `settings.json` versionado (rutas absolutas de máquina, allows ad-hoc) que ensucian el commit
+- 1: `settings.local.json` usado para overrides per-máquina/per-usuario, O el proyecto no necesita overrides locales (auto-pass)
 
-Projects that have not opted into v3 behavior governance (no `behaviors/` directory) auto-pass. The override loop is meaningful only when behaviors are active and may generate soft_block overrides. See `scripts/process-override-log.sh` and `docs/v4/SPEC.md`.
+**Verificación:** Si hay rutas de máquina o permisos ad-hoc en `.claude/settings.json` versionado que deberían estar en `settings.local.json` → 0. Cascade nativo: Managed > Local > Project > User. Ver `.claude/rules/domain/permission-model.md`.
+
+### 13. Attribution configurado (0-1)
+- 0: Usa el `includeCoAuthoredBy` deprecado, O trailers de commit/PR inconsistentes con la intención del proyecto
+- 1: `attribution.commit` / `attribution.pr` configurado en settings.json, O el co-author por defecto es aceptable para el proyecto (auto-pass)
+
+**Verificación:** Buscar `includeCoAuthoredBy` (deprecado → recomendar migrar a `attribution.*`). Auto-pass si el default alcanza. Para GitHub/GitLab/Bitbucket self-hosted, verificar `prUrlTemplate`. Ver `.claude/rules/_common.md` § Git.
+
+### 14. Comandos custom (.claude/commands/)
+- 0: No hay comandos custom
+- 1: Al menos 1 comando custom relevante al proyecto
+
+### 15. Agentes de orquestación
+- 0: No hay .claude/agents/ ni regla agents.md
+- 1: Agentes instalados + regla de orquestación activa en .claude/rules/
+
+**Tier adjustments (dimensión A):**
+- `simple` (<5K LOC, 1 stack, sin CI): items 14-15 con score 0 no penalizan (N/A)
+- `complex` (>50K LOC, 3+ stacks, monorepo): items 14-15 semi-obligatorios (cada uno 0-2 en vez de 0-1)
+
+---
+
+# Dimensión B — Adopción dotforge (informativo, 0-5)
+
+**No afecta el score de Salud Nativa.** Mide cuánto adoptó el proyecto la maquinaria de gobernanza dotforge. Reportar como `Adopción: N/5` con label (0=None, 1-2=Partial, 3-4=Most, 5=Full). Sirve para decidir propagación, no para juzgar calidad.
+
+### B1. Behaviors v3 compilados y wired
+- 0: Sin behaviors enforced — declaración en `behaviors/index.yaml` sola NO cuenta
+- 1: Al menos un behavior compilado a `.claude/hooks/generated/*__pretooluse__*.sh` Y referenciado en `settings.json`
+
+**Verificación:** `ls .claude/hooks/generated 2>/dev/null` y `grep generated .claude/settings.json`.
+
+### B2. Workflow availability (v4)
+- 0: No hay `workflows/` o está vacío
+- 1: `workflows/` con al menos un `.js` que contiene `export const meta`
+
+**Verificación:** `grep -q "export const meta" workflows/*.js`. Señal de gobernanza, no de calidad — los bash skills siguen siendo el workhorse. Ver `docs/v4/SPEC.md`.
+
+### B3. Override capture loop activo (v4)
+- 0: `.forge/audit/overrides.log` no rastreado O `session-start-process-overrides.sh` no wired
+- 1: Ambos presentes: log existe Y el hook está en `.claude/settings.json` SessionStart
+
+**Verificación:** `test -f .forge/audit/overrides.log && grep -q "session-start-process-overrides.sh" .claude/settings.json`. Solo significativo si hay behaviors activos. Ver `scripts/process-override-log.sh`.
+
+### B4. Domain rules
+- 0: No hay `.claude/rules/domain/`
+- 1: Al menos un domain rule presente y fresco (`last_verified` <90 días)
+
+**Verificación:** Contar archivos en `.claude/rules/domain/`. Reportar cuántos están stale (>90 días). Si hay lógica de negocio pero no domain rules, sugerir `/forge domain extract`.
+
+### B5. Sync recency
+- 0: `dotforge_version` del proyecto desfasado respecto a `VERSION` por ≥1 minor, o desconocido
+- 1: Proyecto sincronizado a la versión actual de dotforge (`dotforge_version` == `VERSION`)
+
+**Verificación:** Comparar `dotforge_version` del registry con `$DOTFORGE_DIR/VERSION`.

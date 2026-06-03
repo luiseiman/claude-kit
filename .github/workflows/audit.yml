@@ -1,5 +1,10 @@
 name: dotforge audit score
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 on:
   pull_request:
     branches: [main]
@@ -43,28 +48,44 @@ jobs:
         with:
           script: |
             const result = JSON.parse(process.env.AUDIT_RESULT);
-            const score  = result.score;
+            const score  = result.native_health ?? result.score;
             const level  = result.level;
+            const adoption = result.forge_adoption ?? 0;
+            const adoptionLabel = result.adoption_label ?? 'None';
             const cap    = result.security_cap ? '\n> ⚠️ **Security cap applied** — settings.json or block-destructive missing.' : '';
 
             const emoji = score >= 9 ? '🟢' : score >= 7 ? '🟡' : score >= 5 ? '🟠' : '🔴';
 
-            const itemRows = Object.entries(result.items).map(([key, v]) => {
+            const itemRows = Object.entries(result.native_health_items).map(([key, v]) => {
               const num  = key.split('_')[0];
               const name = key.split('_').slice(1).join('_');
               const icon = v.score === 0 ? '❌' : v.score === 1 ? '⚠️' : '✅';
               return `| ${num} | ${name} | ${icon} ${v.score} | ${v.note} |`;
             }).join('\n');
 
+            const adoptionRows = Object.entries(result.adoption_items || {}).map(([key, v]) => {
+              const num  = key.split('_')[0];
+              const name = key.split('_').slice(1).join('_');
+              const icon = v.score === 0 ? '—' : '✅';
+              return `| ${num} | ${name} | ${icon} ${v.score} | ${v.note} |`;
+            }).join('\n');
+
             const body = [
-              `## ${emoji} dotforge Audit Score: **${score}/10** (${level})${cap}`,
+              `## ${emoji} dotforge Native Health: **${score}/10** (${level})${cap}`,
+              `dotforge Adoption: **${adoption}/5** (${adoptionLabel}) — _informational, does not affect Native Health_`,
               '',
-              `| Obligatorio | ${result.score_obligatorio}/10 | Recomendado | ${result.score_recomendado}/7 |`,
+              `| Obligatorio | ${result.score_obligatorio}/10 | Recomendado | ${result.score_recomendado}/10 |`,
               '|---|---|---|---|',
               '',
+              '### Dimension A — Native Health',
               '| # | Item | Score | Note |',
               '|---|---|---|---|',
               itemRows,
+              '',
+              '### Dimension B — dotforge Adoption (informational)',
+              '| # | Item | Score | Note |',
+              '|---|---|---|---|',
+              adoptionRows,
               '',
               '_Score computed by `audit/score.sh` — mechanical checks only. Run `/forge audit` for full semantic evaluation._',
             ].join('\n');

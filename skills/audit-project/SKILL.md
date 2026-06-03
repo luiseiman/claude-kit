@@ -64,40 +64,47 @@ For each checklist item, verify existence **and quality**:
    - Is it referenced in `.claude/settings.json` under hooks?
 5. **Build/test commands** — Are they in CLAUDE.md? Do they match the detected stack?
 
-### Recommended (0-10 bonus points)
-6. **CLAUDE_ERRORS.md** — Does it exist with table format with Type column?
-7. **Hook lint** — Does it exist? Is it executable? (verify `chmod +x`)
-8. **Custom commands** — Are there files in `.claude/commands/`?
-9. **Memory** — Are there project memory files?
-10. **Agents** — Is there `.claude/agents/` + `agents.md` rule in rules?
-11. **.gitignore** — Does it protect .env, *.key, *.pem, credentials?
-12. **Prompt injection scan** — Are rules/CLAUDE.md free of suspicious patterns?
-13. **Auto mode safety** — If `permissions.defaultMode: "auto"` in settings.json, is the deny list complete? (auto-pass if not auto)
-14. **v3 behaviors compiled** — Are there `.claude/hooks/generated/*.sh` AND referenced in settings.json? (Project that hasn't opted into v3 governance scores 0; non-applicable cap does NOT apply)
-15. **OS-level sandboxing** — `sandbox.enabled: true` with at least one restriction OR project demonstrably handles no secrets (auto-pass)
-16. **Workflow availability (v4)** — `workflows/` directory exists with at least one `.js` file containing `export const meta` block. Auto-pass if project has not opted into v4 (no `workflows/` reference in `audit/scoring.md` for v3.x projects).
-17. **Override capture loop active (v4)** — `.forge/audit/overrides.log` exists AND `session-start-process-overrides.sh` wired in `.claude/settings.json` SessionStart. Auto-pass if project hasn't installed v3 behaviors (no `behaviors/` dir).
+### Dimension A — Native Health, Recommended (0-10 bonus points)
+6. **.gitignore** — Does it protect .env, *.key, *.pem, credentials?
+7. **Prompt injection scan** — Are rules/CLAUDE.md free of suspicious patterns?
+8. **Auto mode safety** — If `permissions.defaultMode: "auto"`, is the deny list complete? (auto-pass if not auto)
+9. **OS-level sandboxing** — `sandbox.enabled: true` with at least one restriction OR project demonstrably handles no secrets (auto-pass)
+10. **Hook lint** — Does it exist? Is it executable? (verify `chmod +x`)
+11. **Auto-memory well used (NEW)** — Is `MEMORY.md` a concise index (<200 lines AND <25KB), not a content dump? If errors are tracked, `CLAUDE_ERRORS.md` exists with table format (Type column). Penalize dumping content into the index — only first 200 lines / 25KB are injected per session.
+12. **Permission cascade (NEW)** — Are machine-local overrides kept in `settings.local.json` rather than polluting versioned `settings.json`? Auto-pass if no local overrides needed.
+13. **Attribution configured (NEW)** — `attribution.commit`/`attribution.pr` set (not the deprecated `includeCoAuthoredBy`)? Auto-pass if the default co-author is acceptable. For self-hosted forges, check `prUrlTemplate`.
+14. **Custom commands** — Are there files in `.claude/commands/`?
+15. **Agents** — Is there `.claude/agents/` + `agents.md` rule in rules?
 
-**Tier adjustments:**
-- `simple`: items 8-10 score 0 don't penalize (treated as N/A)
-- `complex`: items 8-10 become semi-obligatory (each 0-2 instead of 0-1)
+**Tier adjustments (dimension A):**
+- `simple`: items 14-15 score 0 don't penalize (treated as N/A)
+- `complex`: items 14-15 become semi-obligatory (each 0-2 instead of 0-1)
 
-**v4 transition note:** Items 16-17 are documented in `audit/checklist.md` but enforcement varies by dotforge version:
-- v3.x: items 16-17 auto-pass (informational only)
-- v4.0+: items 16-17 contribute to score per normal rules
+### Dimension B — dotforge Adoption (informational, 0-5, does NOT affect native_health)
+- **B1. v3 behaviors compiled** — `.claude/hooks/generated/*.sh` exist AND referenced in settings.json?
+- **B2. Workflow availability (v4)** — `workflows/` with at least one `.js` containing `export const meta`?
+- **B3. Override capture loop (v4)** — `.forge/audit/overrides.log` exists AND `session-start-process-overrides.sh` wired in SessionStart?
+- **B4. Domain rules** — at least one rule in `.claude/rules/domain/` with `last_verified` <90 days? Report stale count.
+- **B5. Sync recency** — project `dotforge_version` == `$DOTFORGE_DIR/VERSION`?
 
-To detect target enforcement: check `$DOTFORGE_DIR/VERSION` — if major < 4, treat items 16-17 as informational.
+A project scoring B=0 (native-first) is a valid, non-penalized outcome. Never recommend adopting dotforge machinery just to raise B.
 
-## Step 4: Calculate score
+## Step 4: Calculate scores (two dimensions)
 
 Use weights from `$DOTFORGE_DIR/audit/scoring.md`:
-1. `score_obligatory = sum(items 1-5)` — maximum 10
-2. `score_recommended = sum(items 6-15)` — maximum 10 (v3) or `sum(items 6-17)` — maximum 12 (v4)
-3. `score_total = score_obligatory * 0.7 + score_recommended * (3.0 / max_recommended)` — max 7.0 + 3.0 = 10.0
-4. Apply tier adjustments before calculating (see Step 1b)
-5. `score_normalized = min(score_total, 10)`
 
-**Security cap:** If item 2 (settings.json) or item 4 (block-destructive) is 0, maximum score = 6.0.
+**Dimension A — Native Health (the primary score):**
+1. `native_health_obligatory = sum(items 1-5)` — maximum 10
+2. `native_health_recommended = sum(items 6-15)` — maximum 10
+3. `native_health = native_health_obligatory * 0.7 + native_health_recommended * 0.3` — max 10.0
+4. Apply tier adjustments before calculating (see Step 1b)
+5. `native_health = min(native_health, 10)`
+
+**Security cap:** If item 2 (settings.json) or item 4 (block-destructive) is 0, `native_health` max = 6.0.
+
+**Dimension B — dotforge Adoption (informational):**
+6. `forge_adoption = sum(items B1-B5)` — 0 to 5. Does NOT enter native_health.
+7. Label: 0=None, 1-2=Partial, 3-4=Most, 5=Full.
 
 ## Step 5: Generate report
 
@@ -108,7 +115,10 @@ Date: {{YYYY-MM-DD}}
 Detected stack: {{stacks}}
 Tier: {{simple|standard|complex}}
 dotforge version: {{version from last bootstrap/sync if detectable}}
-Score: {{X.X}}/10 {{level}}
+Native Health: {{X.X}}/10 {{level}}
+dotforge Adoption: {{N}}/5 {{None|Partial|Most|Full}}  (informational — does not affect Native Health)
+
+═ DIMENSION A — NATIVE HEALTH ═
 
 ── OBLIGATORY ──
 {{✅|⚠️|❌}} CLAUDE.md ({{0-2}}) — {{detail: which sections exist/missing}}
@@ -118,18 +128,23 @@ Score: {{X.X}}/10 {{level}}
 {{✅|⚠️|❌}} Build/test commands ({{0-2}}) — {{detail: which ones and whether they match the stack}}
 
 ── RECOMMENDED ──
-{{✅|⚠️}} CLAUDE_ERRORS.md — {{detail}}
-{{✅|⚠️}} Hook lint — {{detail: executable yes/no}}
-{{✅|⚠️}} Custom commands — {{detail: N commands}}
-{{✅|⚠️}} Memory — {{detail}}
-{{✅|⚠️}} Agents — {{detail}}
 {{✅|⚠️}} .gitignore — {{detail}}
 {{✅|⚠️}} Prompt injection scan — {{detail}}
 {{✅|⚠️}} Auto mode safety — {{detail: auto mode active/inactive, deny list complete/incomplete}}
-{{✅|⚠️}} v3 behaviors compiled — {{detail: N generated hooks, settings reference yes/no}}
 {{✅|⚠️}} OS sandboxing — {{detail: enabled/disabled, secret indicators yes/no}}
-{{✅|⚠️|—}} v4 workflow availability — {{detail: N .js workflows OR "n/a v3 project"}}
-{{✅|⚠️|—}} v4 override loop active — {{detail: hook wired yes/no, log exists yes/no, OR "n/a no v3 behaviors"}}
+{{✅|⚠️}} Hook lint — {{detail: executable yes/no}}
+{{✅|⚠️}} Auto-memory well used — {{detail: MEMORY.md lines/KB, index vs dump, CLAUDE_ERRORS yes/no}}
+{{✅|⚠️}} Permission cascade — {{detail: settings.local.json used / no local overrides}}
+{{✅|⚠️}} Attribution configured — {{detail: attribution.* set / deprecated includeCoAuthoredBy / default ok}}
+{{✅|⚠️}} Custom commands — {{detail: N commands}}
+{{✅|⚠️}} Agents — {{detail}}
+
+═ DIMENSION B — DOTFORGE ADOPTION ═ (informational)
+{{✅|—}} B1 v3 behaviors compiled — {{detail: N generated hooks, settings reference yes/no}}
+{{✅|—}} B2 v4 workflow availability — {{detail: N .js workflows OR "none"}}
+{{✅|—}} B3 v4 override loop active — {{detail: hook wired yes/no, log exists yes/no}}
+{{✅|—}} B4 domain rules — {{detail: N rules, M stale >90d}}
+{{✅|—}} B5 sync recency — {{detail: project version vs current VERSION}}
 
 ── DOMAIN KNOWLEDGE ──
 Role defined:     {{✓ if ## Role exists in CLAUDE.md with content | ✗ otherwise}}
@@ -178,9 +193,12 @@ This closes the Audit → Learning synergy: detected gaps feed back into the pra
 ## Step 8: Update registry
 
 If `$DOTFORGE_DIR/registry/projects.yml` exists, update the project entry:
-- `score:` with the calculated score
+- `score:` with `native_health` (the primary score — preserves trend continuity with prior audits)
+- `forge_adoption:` with the dimension-B value (0-5)
 - `last_audit:` with the current date
 - `dotforge_version:` with the VERSION version if the project was bootstrapped
 - `last_sync:` preserve the existing value (do not modify here)
 - `notes:` brief summary of the audit
-- `history:` append a new entry `{date: YYYY-MM-DD, score: X.X, version: <dotforge_version>}`. Never overwrite previous entries — this enables score trending over time.
+- `history:` append a new entry `{date: YYYY-MM-DD, score: X.X, adoption: N, version: <dotforge_version>}`. Never overwrite previous entries — this enables trending over time.
+
+**Transition note:** the two-dimension model (v4.x) changes how scores compose vs the single-score model. Native-first projects (no behaviors/workflows) will show HIGHER `native_health` than their old single score because dimension-B items no longer penalize them. Expect a one-time step in the history trend at the first two-dimension audit; this is by design, not a regression.

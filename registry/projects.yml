@@ -10,9 +10,13 @@
 # committed example shows the schema; `projects.local.yml` holds real state.
 #
 # Schema: name, path, stacks, last_audit, last_sync, dotforge_version, score,
-#         history, metrics_summary, ultracode_tier, notes
-# Scoring v2.3.0: score = obligatorio*0.7 + recomendado*(3.0/8) (max 10.0)
-# history: array of {date, score, version} — appended, never overwritten
+#         forge_adoption, history, metrics_summary, ultracode_tier, notes
+# Scoring v4.x (two dimensions, see audit/scoring.md):
+#   score          = native_health = obligatorio*0.7 + recomendado*0.3 (max 10.0)
+#                    items 1-5 obligatorios (0-2), items 6-15 recomendados (0-1)
+#                    security cap 6.0 if item 2 or 4 == 0
+#   forge_adoption = sum(items B1-B5), 0-5, INFORMATIONAL — does not affect score
+# history: array of {date, score, adoption, version} — appended, never overwritten
 # metrics_summary: aggregated from ~/.claude/metrics/{slug}/ via /forge insights
 #
 # ultracode_tier (v3.12.0+): drives default posture for Ultracode mode +
@@ -39,10 +43,11 @@ projects:
     last_audit: 2026-04-14
     dotforge_version: 3.0.4
     score: 9.7
+    forge_adoption: 5
     history:
       - {date: 2026-04-08, score: 10.0, version: 2.9.1}
       - {date: 2026-04-14, score: 9.7, version: 3.0.4}
-    notes: "Reference config. v3 behaviors compiled to generated/. Sandbox pending (item 15)."
+    notes: "Reference config. native_health 9.7, adoption Full (5/5). Sandbox pending (item 9)."
 
   - name: cds-dashboard
     path: /Users/luiseiman/Documents/jira nbch/cds-dashboard

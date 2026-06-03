@@ -1,334 +1,199 @@
 # dotforge v4.0 — Specification of record
 
-Draft · 2026-06-03 · Phase 0 research output (revised after token-economy reality check)
+**Status:** Phase 0 complete · **PoC verdict:** workflow refactor REJECTED · **v4 scope:** override capture loop + audit items + workflow as optional escalation tool
 
-## Status
+Final revision · 2026-06-03
 
-**Phase:** 0 (research) · **Go/no-go decision:** ⏳ pending PoC of `workflows/watch.js`
+## Mission (revised post-PoC)
 
-## Mission
-
-> dotforge v4 selectively converts operations where **LLM judgment is the work** from declarative markdown (skills) to orchestration code (workflows). Mechanical work stays as bash skills — workflow refactor of mechanical operations is a **token bomb antipattern**. Adversarial verify is opt-in per workflow, configured by skepticism arg. The practices↔behaviors loop closes via override capture (bash, not workflow).
+> dotforge v4 closes the practices↔behaviors loop via override capture, adds workflow availability as **optional escalation tool** (not a default refactor), and tightens audit checklist with 2 new items. Workflow refactor of existing skills was tested in PoC and rejected on cost-quality grounds.
 
 ## Anti-thesis: what v4 is NOT
 
-A common mistake is "workflow-native everywhere" — convert every multi-step skill to a workflow. **This is wrong.** A pure-bash skill like `/forge sync-all` (0 LLM tokens) becomes a $2-5 workflow if naively refactored. The work classifying git state mechanically does not need an LLM.
+The original v4 thesis was "workflow-native everywhere — convert multi-step skills to workflows for adversarial verify by default". **Phase 0 PoC rejected this.** Empirical data:
 
-**Token-economy rule:** if a skill currently spawns 0 subagents and uses 0 LLM calls in its hot path, refactoring it to a workflow is a regression. Keep it as bash.
+- 4 smoke tests of `workflows/watch.js` measured $5-30 per run vs $0.75-1.00 baseline (`/forge watch` skill)
+- Per-agent overhead in workflows (~80K tokens fixed per agent) dominates over model-routing savings
+- Verify-without-WebSearch (cost optimization) caused quality regression: smoke #4 missed the 10K char cap finding that smoke #3 verified
+- Per-stage model routing helps but does not reach cost parity
 
-## Research questions — answered (2026-06-03)
+The lesson: **workflows are valuable as on-demand escalation, not as default replacement for mechanical or recurring work.**
 
-### Q1: ¿Can workflow scripts import or require other .js files?
+## Phase 0 PoC findings (final)
 
-**Answer: NO.** Workflows are single self-contained `.js` files. The docs describe scripts as singular: *"Every run writes its script to a file under your session's directory"*. No documented `import` / `require` syntax. Helper functions must be **inlined into each workflow**.
+### Cost reality (measured)
 
-**Implication for dotforge:**
-- No shared library of helpers across workflows
-- Each workflow that needs `timeout()`, `_smart_push()`, etc. carries its own copy
-- Workflows in the 200-500 line range are normal
-- Mitigation: each workflow's `meta` block can reference a documented shared pattern in `docs/v4/PATTERNS.md` for human reference, but code stays inline
+| Configuration | Cost per typical run | vs baseline |
+|---------------|---------------------|-------------|
+| `/forge watch` skill (current) | ~$0.75-1.00 | baseline |
+| Workflow with default Opus session model (smoke #3) | ~$5-25 | 5-25x baseline |
+| Workflow with model routing + WebSearch verify (smoke #4) | ~$4-5 | 4-5x baseline |
+| Workflow with model routing + internal verify (smoke #4) | ~$4-5 | 4-5x baseline AND quality regression |
 
-### Q2: ¿Is there a test harness for workflows?
+### Quality observations
 
-**Answer: NO formal harness.** Doc strategy is *"run the workflow on a small slice first: one directory instead of the whole repo, or a narrow question instead of a broad one"*. No dry-run mode. No unit testing pattern documented.
+- Smoke #3 verified 4 real gaps including BREAKING (`additionalContext` 10K char cap)
+- Smoke #4 verified only 3 — the 10K cap finding was downgraded to "unverified" because internal-reasoning verify could not confirm against external source
+- **Cost reduction came at quality cost**, violating user's calibration ("no degradar calidad y exactitud")
 
-**Implication for dotforge:**
-- Workflows test by running
-- Mitigation pattern: each refactored workflow accepts `args.dryRun: true` to skip mutations and emit a plan instead
-- Mitigation pattern: each workflow accepts `args.slice: <N>` to process only the first N items in any fan-out for cost-bounded smoke tests
-- Decision: **mandatory** for any v4 workflow refactor — dryRun + slice params
+### Architecture conclusions
 
-### Q3: ¿Can workflows invoke other workflows? Nesting depth?
+1. **Workflows have substantial per-agent fixed overhead** (~80K tokens regardless of model). 9-12 agents per workflow → cost floor ~$3-5 even with optimal routing
+2. **Adversarial verify quality depends on cross-source check** (WebSearch). Cheap internal verify is unreliable
+3. **Hybrid (main thread fetches, workflow processes)** lowered cost by ~30% vs pure workflow but still 4-5x over baseline
+4. **Workflows DO catch real gaps** that mechanical skills miss (validated in smoke #3) — value is real, just expensive per finding
 
-**Answer: YES, 1 level only.** The `workflow()` primitive: *"workflow(nameOrRef, args?): run another workflow inline as a sub-step. Nesting is one level only: workflow() inside a child throws."*
+### When workflows DO make economic sense
 
-**Implication for dotforge:**
-- A composition like `sync-all → audit-each-repo` is valid (1 level)
-- A composition like `sync-all → audit-each-repo → behavior-check-each` is NOT (2 levels)
-- Mitigation: deep composition flatten to phase()-grouped sequential calls in parent
+- Adversarial verify on individually high-stakes findings (manual escalation per finding)
+- One-off codebase-wide research questions (`/deep-research` is bundled for this)
+- Production-tier projects where false-positive cost > workflow cost (~$5 cheap insurance vs hours of cleanup)
 
-### Q4: ¿Can `agent(..., {agentType: 'researcher'})` resolve dotforge's custom agents?
+Not viable for: recurring lifecycle work (watch/update/sync-all), routine governance, anything with 0 LLM cost in current bash form.
 
-**Answer: YES, when symlinked to `~/.claude/agents/`.** The `agentType` option *"uses a custom subagent type instead of the default workflow subagent — resolved from the same registry as the Agent tool"*. dotforge already symlinks `agents/*.md` to `~/.claude/agents/` via `global/sync.sh`, so they're discoverable.
+## v4 final scope
 
-**Implication for dotforge:**
-- Dotforge agents (`researcher`, `architect`, `implementer`, `code-reviewer`, `security-auditor`, `test-runner`, `session-reviewer`) ARE usable from workflows via `agentType`
-- Cost: untested. dotforge agents are full markdown specs vs the lighter workflow-default agent. Phase 0 PoC must measure this delta.
-- Mitigation: workflows can mix custom agents (for specialized lenses) with default workflow agents (for generic work)
+### IN
 
-## Architecture — final
+1. **`scripts/process-override-log.sh`** — bash script processing `.forge/audit/overrides.log`. Reads logged soft_block overrides, groups by `(behavior_id, tool, normalized_reason)`, creates `practices/inbox/auto-override-*.md` when count ≥ 3 within retention window. Idempotent (dedupes against existing inbox entries).
+2. **`SessionStart` hook wiring** — `template/hooks/session-start-process-overrides.sh` calls the script on session start. Same wiring in `.claude/hooks/` for self-hosting.
+3. **Audit checklist items 16-17**:
+   - **Item 16 (workflow availability)**: `workflows/` directory exists with at least 1 documented entry. Score 0/1.
+   - **Item 17 (override capture loop active)**: `.forge/audit/overrides.log` exists AND `process-override-log.sh` wired in `SessionStart`. Score 0/1.
+4. **`workflows/watch.js`** stays in repo as REFERENCE implementation. Documented as "available on-demand for high-confidence reviews". NOT promoted to `/forge watch` default.
+5. **New domain rule `domain/workflow-economics.md`** — documents cost reality measured in Phase 0 PoC. Decision matrix: when workflow vs skill. Token economy principles. Lessons learned.
+6. **The 4 captures from smoke #3 in `practices/inbox/`** (added 2026-06-03):
+   - `hook-output-10k-cap.md` (BREAKING)
+   - `claude-env-file-preamble.md` (HIGH)
+   - `sessionstart-watchpaths.md` (HIGH)
+   - `plugin-defaultenabled-dormant.md` (MEDIUM)
 
-```
-dotforge/
-├── workflows/                       # NEW v4 — small, justified set only
-│   ├── README.md                    # Authoring conventions + token economy
-│   ├── watch.js                     # Replaces skills/watch-upstream/ — LLM-research justifies
-│   └── _shared/                     # Reference-only; copy-paste into workflows
-│       └── PATTERNS.md              # timeout, parallel xargs, dryRun pattern
-├── skills/                          # MOST skills stay — they're mechanical work
-├── docs/v4/                         # NEW v4
-│   ├── SPEC.md                      # This file
-│   ├── PATTERNS.md                  # Inline-reference patterns library
-│   ├── MIGRATION-V3-TO-V4.md        # User migration guide
-│   └── WORKFLOW-CONVENTIONS.md      # dotforge-specific authoring rules
-├── scripts/
-│   ├── migrate-v3-to-v4.sh          # NEW — migrator with dry-run
-│   └── process-override-log.sh      # NEW — periodic override→practice capture
-└── .claude/hooks/
-    └── session-start-process-overrides.sh  # NEW — calls process-override-log.sh
-```
+### OUT (rejected by evidence)
 
-## Decision matrix: workflow vs skill
+- ❌ `/forge watch` → workflow refactor (4-5x cost, quality regression)
+- ❌ `/forge update` → workflow refactor (similar economics expected)
+- ❌ `/forge sync-all` → workflow refactor (mechanical, token bomb)
+- ❌ Auto-promotion of practices to behaviors (deferred to v4.x)
+- ❌ MCP server exposing dotforge state (deferred)
+- ❌ Cross-project daemon (rejected philosophically)
+- ❌ KNOWN_TOPICS static glossary (quality regression, was a token-saving anti-pattern)
 
-Apply this matrix BEFORE proposing any v4 workflow refactor:
+## Audit checklist v4 final
 
-| Question | Skill (stay) | Workflow (refactor) |
-|----------|--------------|---------------------|
-| Is the hot path LLM-driven? | No (bash/git/grep/file checks) | Yes (research, synthesis, evaluation) |
-| Does adversarial verify add value? | No (deterministic output) | Yes (catches LLM hallucinations) |
-| Wall-clock currently > 2 min? | Either | Yes — parallel agents help |
-| Token cost currently > $0.30? | Either | Maybe — but workflow can be cheaper if parallel structure helps |
-| Is the work fan-out shaped? | No (linear) | Yes (10+ independent items) |
-| Does main thread need to retain context? | Yes | No — context isolation helps |
+Items 1-15 unchanged from v3. Items 16-17 new:
 
-**If 4+ questions point to "Skill (stay)" → DO NOT REFACTOR.**
+### Item 16: workflow availability (0-1)
 
-Applied to dotforge skills (2026-06-03):
-- ✅ `/forge sync-all` → SKILL forever (0 hot-path LLM calls, mechanical)
-- ✅ `/forge audit` → SKILL forever (file/grep checks)
-- ✅ `/forge capture` → SKILL forever (single LLM query)
-- ✅ `/forge bootstrap/init/sync` → SKILL forever (file ops)
-- ⚖️ `/forge update` → CONDITIONAL (workflow only if adversarial verify atrapa real bad decisions; otherwise skill with stricter prompts)
-- ✅ `/forge watch` → WORKFLOW (research IS LLM, multiple sources, parallel fetch+verify helps)
-- ⚖️ `/forge scout` → CANDIDATE for workflow (multi-source like watch)
-- ⚖️ `/forge insights` → CANDIDATE for workflow (pattern detection across history)
+- 0: No `workflows/` directory OR directory empty
+- 1: `workflows/` directory exists with at least 1 `.js` file having `meta` block
 
-## Token economy principles (mandatory)
+**Verification:** `ls workflows/*.js 2>/dev/null | head -1` returns a file. Open it and confirm `export const meta` exists.
 
-Every dotforge workflow MUST follow:
+Score is intentionally low (1 point). Workflow presence is governance signal, not a quality measure — bash skills remain the workhorse.
 
-1. **Bash-first triage at workflow start**: filter work mechanically before spawning subagents. If a workflow's first phase is "classify candidates", do it in a bash command outside the workflow, then pass only the interesting subset as `args`.
+### Item 17: override capture loop active (0-1)
 
-2. **Default skepticism = single-pass**: `args.skepticism: 'normal'` (default) = 1 verify call per finding. `'high'` = 2-3 verify calls. `'low'` = 0 (skip verify). Production-tier projects can override. **Never multi-pass by default.**
+- 0: `.forge/audit/overrides.log` doesn't exist OR `process-override-log.sh` not wired in `SessionStart`
+- 1: Both present AND wired
 
-3. **Custom `agentType` only when role matters**: default workflow agent is lighter than dotforge custom agents (which carry full markdown spec). Use `agentType: 'security-auditor'` only when the role's specific instructions change output materially.
-
-4. **Schema validation = 0 token cost**: ALWAYS use `opts.schema` for structured output. Validation is at tool layer, doesn't add tokens, prevents retries from malformed responses.
-
-5. **Minimal prompts per `agent()` call**: ONLY the context needed for that specific decision. No "here's the full session" dumps. No history of prior agent results unless that agent's job is synthesis.
-
-6. **Declare `budget.total` in every workflow**: hard ceiling per run. Default `budget.total: 100_000` tokens (≈$0.30 at Sonnet 4.6 rates). Critical workflows can set higher with justification in `meta.description`.
-
-7. **Resume cache via `resumeFromRunId`**: same script + same `args` → 100% cache hit. Use for iterate-test cycles during workflow development.
-
-8. **Phase boundaries are FREE**: use `phase('Verify')` liberally for progress visibility. Costs 0 tokens.
-
-9. **One workflow = one concern**: no kitchen-sink workflows. Compose via `workflow()` 1-level when needed. Smaller workflows = better resume caching = cheaper iteration.
-
-10. **Log per-phase token spend**: end every workflow with `log(\`Spent: ${budget.spent()} tokens\`)`. Forces awareness during dev.
-
-## v4 conventions for workflow authoring
-
-Mandatory for every dotforge-owned workflow:
-
-1. **Apply decision matrix first** — if it doesn't pass, stay as skill
-2. **Apply token economy principles** (above) — non-negotiable
-3. **`meta.phases`** explicit, never elided — progress visibility
-4. **`args.dryRun: boolean`** support — for smoke testing without mutations
-5. **`args.slice: number`** support — for cost-bounded partial runs in fan-out workflows
-6. **`args.skepticism: 'low' | 'normal' | 'high'`** — controls adversarial verify intensity
-7. **`args.verbose: boolean`** — noisier log() output during debugging
-8. **`budget.total`** declared in script body, default 100k tokens
-9. **Header comment** with: purpose, when to use, args contract, expected token cost for typical run, expected wall-clock
-10. **Inline timeout helper** (no external deps allowed)
-11. **Schema validation** for any structured output (`opts.schema`) — always
-12. **Filter null** after `parallel()` — `.filter(Boolean)` always
-13. **End with token spend log** — `log(\`Spent: ${budget.spent()} of ${budget.total} tokens\`)`
-
-## Override capture loop spec
-
-### Mechanism
-
-NOT a runtime hook. v3 already writes to `.forge/audit/overrides.log` whenever user overrides a soft_block. v4 processes this log periodically.
-
-### Trigger
-
-`SessionStart` hook (`source: startup`) calls `scripts/process-override-log.sh`.
-
-### Algorithm
-
+**Verification:**
 ```bash
-# scripts/process-override-log.sh
-# Read .forge/audit/overrides.log
-# Group by behavior_id + tool + reason_pattern
-# For each group with count >= MIN_OVERRIDES (default: 3):
-#   Check if practices/inbox/ already has auto-override-<behavior>-<hash>.md
-#   If not: create practice with:
-#     - title: "Frequent override of <behavior_id> on <tool> — review trigger"
-#     - source_type: auto-override
-#     - source: ".forge/audit/overrides.log lines N..M"
-#     - tags: [override-capture, <behavior_id>, auto]
-#     - priority: medium
-#     - status: inbox
+test -f .forge/audit/overrides.log && \
+  grep -q process-override-log.sh .claude/settings.json
 ```
 
-### Dedup
+Together with prior items, max obligatory = 10 (5 × 2pts) + max recommended = 17 (12 × 1pt + 5 × 1pt rejected items?). Actually recalc: 5 obligatory + 12 recommended (10 + 2 new) = max raw 22. Normalize via existing formula `obligatory × 0.7 + recommended × (3.0/12)` → max = 7 + 3 = 10. Same final ceiling.
 
-By `(behavior_id, tool, normalized_reason)` tuple hash. Same group never produces 2 practices unless the source filename and `MIN_OVERRIDES` threshold differ.
+Score impact on existing v3.13 projects: ~8.6/10 until they migrate (lose 2 × 0.25 normalized).
 
-### Not in scope (deferred to v4.x)
+## What gets committed in v4.0.0 release
 
-- Auto-promotion of practice → behavior tightening
-- Metric-driven behavior effectiveness scoring
-- OTEL integration
+| Artifact | Status | Action |
+|----------|--------|--------|
+| `scripts/process-override-log.sh` | TBD — Phase 1 | Implement + test |
+| `template/hooks/session-start-process-overrides.sh` | TBD — Phase 1 | Implement + wire |
+| `.claude/hooks/session-start-process-overrides.sh` | TBD — Phase 1 | Self-hosting copy |
+| `audit/checklist.md` | Update | Add items 16-17 |
+| `audit/scoring.md` | Verify | No formula change, only item count |
+| `workflows/watch.js` | Already written | Keep as-is, document as reference |
+| `docs/v4/SPEC.md` | This file | Already revised |
+| `docs/v4/MIGRATION-V3-TO-V4.md` | TBD — Phase 4 | User migration guide |
+| `domain/workflow-economics.md` | TBD — Phase 1 | Document PoC findings as canonical rule |
+| `VERSION` | Bump | 3.13.0 → 4.0.0 |
+| `docs/changelog.md` | Add v4.0.0 entry | Document all of the above |
+| `README.md` | Light update | New audit count, v4 highlights |
+| `ROADMAP.md` | Update | Mark v4.0.0 complete |
+| `scripts/migrate-v3-to-v4.sh` | TBD — Phase 4 | Dry-run migrator |
 
-## v4.0 Phase plan (revised after Phase 0 findings)
+## Phases (revised post-PoC, smaller scope)
 
-### Phase 1 — Foundation (~1 week real)
+### Phase 0 — Research + PoC ✓ DONE (2026-06-03)
 
-1. `workflows/` directory + `workflows/README.md`
-2. `docs/v4/PATTERNS.md` (copy-paste reference library)
-3. `docs/v4/WORKFLOW-CONVENTIONS.md`
-4. `scripts/process-override-log.sh` + tests
-5. `.claude/hooks/session-start-process-overrides.sh` wired
-6. `scripts/migrate-v3-to-v4.sh` skeleton (dry-run only)
-7. `behaviors/` schema extension: `engine: bash | workflow` field added with default `bash`
-8. Tests: `tests/test-process-override-log.sh`
+- 4 research questions answered (no imports, no test harness, 1-level nesting, custom agentType resolves)
+- 4 smoke tests of `workflows/watch.js` executed
+- Cost-quality data collected
+- 4 real gaps captured from smoke runs
+- v4 scope reduced from "workflow refactor" to "override loop + audit items"
+- Spec finalized (this document)
 
-Branch: `v4-foundation` · No skill retirement yet.
+### Phase 1 — Override loop implementation (~3-5 days real)
 
-### Phase 2 — Workflow refactor (~1-2 weeks real, narrower scope)
+1. `scripts/process-override-log.sh` — bash, dedup logic, idempotent
+2. `template/hooks/session-start-process-overrides.sh` — wire into Setup or SessionStart
+3. `.claude/hooks/session-start-process-overrides.sh` — self-hosting
+4. `template/settings.json.tmpl` — add SessionStart entry
+5. Tests: `tests/test-process-override-log.sh` covering: empty log, single override, 3+ overrides triggering capture, dedup against existing inbox entry, malformed log resilience
+6. `domain/workflow-economics.md` — new domain rule documenting PoC findings
 
-Only 1 workflow refactor in v4.0. Others are deferred to v4.x pending observed need.
+### Phase 2 — Audit checklist update (~1 day real)
 
-#### 2.1 `workflows/watch.js` (sole v4.0 refactor)
+1. `audit/checklist.md` — add items 16-17 with verification steps
+2. `audit/scoring.md` — verify formula works with 12 recommended items (no formula change, just count)
+3. `skills/audit-project/SKILL.md` — extend to evaluate items 16-17
 
-**Baseline measured (`/forge watch` skill, 2026-06-03 estimate):**
-- ~200K tokens total (~90K WebFetch fast model + ~95K main thread synthesis + ~15K search)
-- ~$0.75-1.00 per run
-- ~3-5 min wall-clock
+### Phase 3 — Migration script (~3 days real)
 
-**Target for workflow:**
-- ≤ $0.50 per run (workflow refactor must be CHEAPER, not just faster)
-- ≤ 60 sec wall-clock (parallel fetches)
-- Adversarial verify catches ≥1 false-positive that bash-skill would miss per 3 runs
+1. `scripts/migrate-v3-to-v4.sh` with `--dry-run` and `--rollback`
+2. Per-project migration:
+   - Backup `.claude/` to `.claude.v3-backup/`
+   - Wire SessionStart hook
+   - Update `audit/checklist.md` reference if present
+3. Test dry-run on dotforge itself
+4. Test on 1 standard-tier project (vault-bot or derup)
+5. Validation: `/forge audit` reports new items 16-17
 
-**Design:**
-- `args: {dryRun: false, slice: 6, skepticism: 'normal', verbose: false}`
-- `budget.total: 200_000` (matches skill baseline — must come in under)
-- Phase 1 (fetch): `parallel()` over 6 doc URLs + 3 web searches. Schema-validated extraction per source via `opts.schema`. Default agent (not custom `agentType`).
-- Phase 2 (compare): bash-first cross-reference with current dotforge state via grep — NO agents in this phase. Output: list of candidate gaps.
-- Phase 3 (verify): adversarial verify ONLY findings flagged "BREAKING-ISH" or "HIGH-priority" — not every finding. Single-pass at `skepticism: normal`, dual at `high`.
-- Phase 4 (synthesize): one final agent composes the delta report from validated findings.
+### Phase 4 — Release (~2 days real)
 
-**Architectural note:** Phase 2 is the win. Bash grep is $0 — using LLM to grep for keyword presence is wasteful. Workflow refactor confines LLM to Phase 1 (extraction) and Phases 3-4 (judgment+synthesis).
+1. CHANGELOG v4.0.0 with explicit breaking-change callouts
+2. `README.md` + `ROADMAP.md` updates (audit count, v4 highlights)
+3. VERSION bump
+4. Tag + GitHub release v4.0.0 with migration guide pinned
+5. Sync wave: TRADINGBOT (production) first as integration test, then 10 remaining projects
 
-**Rollback criteria:** if measured cost > $0.50 OR adversarial verify catch rate = 0 across 3 runs, revert to skill with stricter prompts.
-
-#### 2.2 Other refactors — DEFERRED to v4.x
-
-| Skill | v4.0 decision | When to revisit |
-|-------|---------------|-----------------|
-| `/forge sync-all` | STAY SKILL | Never — mechanical work |
-| `/forge update` | STAY SKILL with stricter prompts | After 10+ `/forge update` runs measured, if avg cost > $0.30 |
-| `/forge insights` | STAY SKILL for v4.0 | Re-evaluate after 1 `/forge insights` run measured (currently untested) |
-| `/forge audit` | STAY SKILL | Never — mechanical |
-| `/forge scout` | STAY SKILL for v4.0 | Re-evaluate after `/forge scout` first real use
-
-### Phase 3 — Audit checklist v4 expansion (~3 days real)
-
-Items added:
-- **Item 16:** v4 workflow coverage — score 0/1
-  - 0: no `workflows/` directory or empty
-  - 1: at least 1 workflow + audit-checklist item validated
-- **Item 17:** Override capture loop active — score 0/1
-  - 0: `.forge/audit/overrides.log` exists but no `process-override-log.sh` wired
-  - 1: hook wired + at least 1 entry exists in `practices/inbox/auto-override-*.md` OR log is empty
-
-Recalc: 5 obligatory (0-2) + 12 recommended (0-1) = max 22 raw → normalize via existing formula (×0.7 obligatory + ×3/10 recommended, capped at 10).
-
-Score expectation: projects on v3.13 perfect 10/10 drop to ~8.7/10 until they migrate.
-
-### Phase 4 — Migration + Release (~1 week real)
-
-1. `scripts/migrate-v3-to-v4.sh` validated end-to-end
-2. Dry-run on dotforge itself + 1 standard-tier project (vault-bot or derup)
-3. Real migration on 1 heavy-tier project (InviSight-iOS) as integration test
-4. Release notes prep with explicit breaking-change callouts
-5. CHANGELOG v4.0.0 published
-6. GitHub release tag v4.0.0 + GitHub Release with migration guide pinned
-7. Sync wave to remaining 11 projects (1-by-1, no auto-sync)
-
-## v3 → v4 migration steps (user-facing)
-
-```bash
-# 1. From dotforge directory
-cd $DOTFORGE_DIR
-git fetch && git checkout v4.0.0  # or main if v4 is merged
-bash scripts/migrate-v3-to-v4.sh --dry-run
-
-# 2. Per-project, after reviewing dry-run output
-cd <project>
-bash $DOTFORGE_DIR/scripts/migrate-v3-to-v4.sh
-
-# 3. Migration tasks executed per project:
-#    - Backup .claude/ to .claude.v3-backup/
-#    - Add workflows/ symlink to $DOTFORGE_DIR/workflows/
-#    - Update CLAUDE.md to reference workflows in addition to skills
-#    - Wire .claude/hooks/session-start-process-overrides.sh
-#    - Extend behaviors/ YAML if v3 behaviors compiled to runtime hooks (add engine: bash)
-#    - Validate /forge audit reports new items 16+17
-
-# 4. Rollback if needed
-bash $DOTFORGE_DIR/scripts/migrate-v3-to-v4.sh --rollback
-```
-
-## Risks tracked
+## Risks (updated)
 
 | # | Risk | Mitigation |
 |---|------|------------|
-| 1 | Workflow API changes before v4.0 release | Phase 0 PoC validates current API. Postpone v4.0 release if upstream changes during Phase 1-2 |
-| 2 | Workflow cost (tokens) exceeds skill cost by >2x per typical run | Phase 2 measures each refactor. Rollback if >2x AND <30% calidad improvement |
-| 3 | Adversarial verify generates false positives, increasing user friction | Verify configurable per workflow via `args.skepticism: low|normal|high` |
-| 4 | No imports means workflows duplicate utility code → maintenance burden | `docs/v4/PATTERNS.md` as canonical source of truth; new workflows copy from it; lint script flags drift |
-| 5 | Custom agents (`agentType: researcher`) cost more than default | Phase 2 measures. If >50% over default cost, use default agents only |
-| 6 | Migration script breaks production projects (TRADINGBOT, cotiza-api-cloud, SOMA) | Dry-run mandatory before real run. Atomic backup. Rollback documented. Test on lower-tier first |
-| 7 | Workflow keyword trigger ("ultracode") accidentally triggers in v4 docs | Use "ultracode-tier" or "ultracode-mode" in dotforge docs. Anti-confusion already documented in v3.13 |
-| 8 | v4 governance changes break existing v3 behaviors | `engine: bash` is default for v3 YAML; explicit migration of behavior to `engine: workflow` only when refactored |
-
-## Go/no-go criteria for Phase 1 (token-aware, strict)
-
-PoC of `workflows/watch.js` must demonstrate ALL of these to greenlight v4 release:
-
-- [ ] **Token cost ≤ $0.50 per run** (baseline is $0.75-1.00 → must be cheaper, not just faster)
-- [ ] Token cost < `budget.total: 200_000` (hard ceiling)
-- [ ] Wall-clock < 60 sec (vs baseline 3-5 min)
-- [ ] Schema validation succeeds for all source extraction (no malformed responses needing retry)
-- [ ] Adversarial verify catches ≥1 false-positive across 3 measured runs
-- [ ] Custom `agentType` usage costs ≤ +30% over default workflow agent (if used at all)
-- [ ] `budget.spent()` log at end shows ≤ 80% of `budget.total` (room for variance)
-
-**If 2+ criteria fail:** abort v4 workflow refactor entirely. Pivot to v4 = override capture loop only + audit checklist item 17. `/forge watch` stays as skill with stricter prompts.
+| 1 | Override capture generates noise (toy practices) | Dedup tuple `(behavior_id, tool, normalized_reason)`. Minimum 3 overrides within 30-day window. Auto-add `priority: low` tag for first-pass |
+| 2 | Audit items 16-17 drop existing project scores below "good" threshold (7/10) | Items deliberately low-weight (1 pt each = 0.25 normalized each). Worst case: 10/10 project drops to 9.5/10. Acceptable |
+| 3 | Migration script breaks production projects | Mandatory `--dry-run` first. Atomic `.claude/` backup. Rollback documented |
+| 4 | `workflows/watch.js` reference becomes stale and misleading | Mark with `// REFERENCE ONLY — see docs/v4/SPEC.md for cost analysis` in file header. Consider moving to `docs/v4/examples/` instead of `workflows/` |
+| 5 | Users assume workflows are dotforge-default and incur cost | `domain/workflow-economics.md` documents the decision matrix. README explicit about skill-first philosophy |
 
 ## Open questions
 
-1. **Plugin distribution of workflows**: do workflows in `workflows/` get distributed via dotforge's plugin marketplace path, or only via `.claude/workflows/` in target projects?
-2. **Workflow versioning**: dotforge skills are pinned by VERSION file. Workflows have no inherent version. Strategy?
-3. **MCP integration**: workflows can call MCP tools. Should dotforge ship MCP server for state queries (`mcp__dotforge__list_projects`, etc.) in v4 or defer to v4.x?
-4. **Effort tier**: should `workflows/sync-all.js` set its own model preference (e.g., `model: 'haiku'` for parallel classify), or inherit session model?
+1. **Move `workflows/watch.js` to `docs/v4/examples/`?** Avoids confusion that workflows are dotforge-promoted.
+2. **Should override capture loop also process `disable-for-session` events?** Smoke #3 PoC revealed that `verify-before-done` was disabled mid-session — that's also signal worth capturing.
+3. **Workflow as `/forge watch --workflow` opt-in flag?** Not implemented in this v4.0. Candidate for v4.1 if demand emerges.
 
 ## Next deliverable
 
-PoC of `workflows/watch.js` (read-only / report-only mode). Run on dotforge's actual upstream sources, compare against today's `/forge watch` baseline (~$0.75-1.00, ~3-5 min). Report numbers against all 7 go/no-go criteria.
-
-If PoC succeeds → Phase 1 (foundation) starts.
-If PoC fails 2+ criteria → v4 thesis pivots to override-loop-only (smaller, lower-risk release).
+Phase 1: implement `scripts/process-override-log.sh` + wire SessionStart hook + write `domain/workflow-economics.md`. Test on dotforge itself before broader migration.
 
 ## References
 
-- [Workflows](https://code.claude.com/docs/en/workflows) — primary doc, fetched 2026-06-03
-- [Workflow tool definition](https://code.claude.com/docs/en/workflows#how-a-workflow-runs) — agent/parallel/pipeline/phase
-- [Custom subagents](https://code.claude.com/docs/en/sub-agents) — agentType resolution
-- [Permissions](https://code.claude.com/docs/en/permission-modes) — workflow subagent behavior in modes
-- `domain/workflow-automation.md` — current dotforge v3.13 coverage of /workflows
-- `domain/workflow-and-ultracode-policy.md` — tier-based posture policy (v3.12.0)
+- [Workflows official docs](https://code.claude.com/docs/en/workflows) — fetched 2026-06-03
+- `workflows/watch.js` — reference implementation, 4-smoke-test history
+- `practices/inbox/2026-06-03-*` — 4 captures from PoC smoke runs
+- `domain/workflow-automation.md` — current v3.13 coverage (includes workflow security boundary)
+- `domain/workflow-and-ultracode-policy.md` — tier-based posture policy

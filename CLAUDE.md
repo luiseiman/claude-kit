@@ -73,7 +73,7 @@ Seven subagent definitions in `agents/`: researcher (read-only exploration), arc
 
 ### Audit System
 
-`audit/checklist.md` defines 15 items (5 obligatory scored 0-2, 10 recommended scored 0-1). `audit/scoring.md` normalizes to a 10-point scale. Security-critical items (settings.json, block-destructive hook) cap the score at 6.0 if missing. Registry in `registry/projects.yml` tracks scores across managed projects.
+Two-dimension model (v4.x). **Dimension A — Native Health** (`score`, 0-10): 5 obligatory items (0-2) + 10 recommended (0-1), normalized as `obligatory*0.7 + recommended*0.3`. Security-critical items (settings.json, block-destructive hook) cap it at 6.0 if missing. Measures good use of native Claude Code (auto-memory as index, permission cascade, attribution, sandbox, deny rules). **Dimension B — dotforge Adoption** (`forge_adoption`, 0-5): behaviors/workflows/override-loop/domain-rules/sync-recency. **Informational — does NOT affect Native Health.** A native-first project scoring B=0 with A=10 is a desirable outcome (see `.claude/rules/domain/native-vs-dotforge-boundary.md`). `audit/checklist.md` + `audit/scoring.md` are the source of truth; registry in `registry/projects.yml` tracks both across managed projects.
 
 ### Integrations
 

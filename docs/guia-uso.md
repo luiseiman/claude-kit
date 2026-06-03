@@ -206,7 +206,7 @@ Principio fundamental: **merge, no overwrite**. Nunca sobrescribe sin confirmaci
 
 #### `/forge audit` — verificar estado
 
-Score 0-10 normalizado contra un checklist de 15 items.
+Dos dimensiones: **Salud Nativa** (score 0-10, checklist de 15 items) + **Adopción dotforge** (0-5, informativo, no afecta el score).
 
 ### Dashboard multi-proyecto
 
@@ -340,7 +340,12 @@ Cada stack aporta:
 
 ## 7. Sistema de auditoría
 
-### Checklist (15 items)
+### Dos dimensiones
+
+- **A — Salud Nativa** (0-10): buen uso de Claude Code nativo + seguridad. El score principal.
+- **B — Adopción dotforge** (0-5): cuánta gobernanza dotforge adoptó el proyecto. **Informativo — no afecta la Salud Nativa.** Un proyecto native-first con B=0 y A=10 es un resultado deseable.
+
+### Dimensión A — Salud Nativa (15 items)
 
 #### Obligatorios (0-2 puntos cada uno, peso 70%)
 
@@ -352,29 +357,41 @@ Cada stack aporta:
 | 4 | **Hook block-destructive** | No existe | Existe pero mal configurado | Existe + ejecutable + wired en settings.json |
 | 5 | **Comandos build/test** | No documentados | En README pero no en CLAUDE.md | Documentados en CLAUDE.md con comandos exactos |
 
-#### Recomendados (0-1 punto cada uno, peso 30%)
+#### Recomendados (0-1 punto cada uno, peso 30%) — uso nativo de Claude Code
 
 | # | Item | Criterio |
 |---|------|----------|
-| 6 | CLAUDE_ERRORS.md | Existe con formato de tabla y tipos válidos |
-| 7 | Hook de lint | Configurado para el stack + ejecutable |
-| 8 | Comandos custom | Al menos 1 comando relevante |
-| 9 | Memory del proyecto | Existe con contexto útil |
-| 10 | Agentes | Instalados + regla de orquestación activa |
-| 11 | .gitignore | Protege .env, *.key, *.pem, credentials |
-| 12 | Prompt injection scan | Sin patrones sospechosos en rules/CLAUDE.md |
-| 13 | Auto-mode safety | Allow rules usan comandos específicos, no patrones de intérprete |
-| 14 | Behaviors coverage (v3) | Al menos 1 behavior habilitado en `behaviors/index.yaml` o hook compilado en `.claude/hooks/generated/` |
-| 15 | OS-level sandboxing | `sandbox.enabled` con restricciones de filesystem/network, o proyecto sin manejo de secretos (auto-pass) |
+| 6 | .gitignore | Protege .env, *.key, *.pem, credentials |
+| 7 | Prompt injection scan | Sin patrones sospechosos en rules/CLAUDE.md |
+| 8 | Auto-mode safety | Allow rules usan comandos específicos, no patrones de intérprete |
+| 9 | OS-level sandboxing | `sandbox.enabled` con restricciones de filesystem/network, o proyecto sin manejo de secretos (auto-pass) |
+| 10 | Hook de lint | Configurado para el stack + ejecutable |
+| 11 | **Auto-memory bien usado** | `MEMORY.md` es índice conciso (<200 líneas Y <25KB), no dump; `CLAUDE_ERRORS.md` con columna Type si rastrea errores |
+| 12 | **Permission cascade** | Overrides locales en `settings.local.json`, no en el `settings.json` versionado (auto-pass si no hace falta) |
+| 13 | **Attribution configurado** | `attribution.commit`/`attribution.pr` (no el deprecado `includeCoAuthoredBy`); auto-pass si el default alcanza |
+| 14 | Comandos custom | Al menos 1 comando relevante |
+| 15 | Agentes | Instalados + regla de orquestación activa |
+
+### Dimensión B — Adopción dotforge (5 items, informativo)
+
+| # | Item | Criterio |
+|---|------|----------|
+| B1 | Behaviors v3 compilados | Hook compilado en `.claude/hooks/generated/` Y wired en settings.json |
+| B2 | Workflow availability | `workflows/` con al menos un `.js` con `export const meta` |
+| B3 | Override capture loop | `.forge/audit/overrides.log` + `session-start-process-overrides.sh` wired en SessionStart |
+| B4 | Domain rules | Al menos un rule en `.claude/rules/domain/` (frescura evaluada semánticamente) |
+| B5 | Sync recency | `dotforge_version` del proyecto == `VERSION` actual |
 
 ### Fórmula de scoring
 
 ```
-score = obligatorio × 0.7 + recomendado × (3.0 / 10)
+native_health = obligatorio × 0.7 + recomendado × 0.3     # 0-10, score principal
+forge_adoption = sum(B1..B5)                              # 0-5, informativo
 ```
 
 - Obligatorios perfectos sin recomendados = **7.0** (Bueno)
 - Cada recomendado aporta 0.3 — para llegar a 9+ necesitás al menos 7 recomendados
+- `forge_adoption` nunca afecta `native_health`
 
 ### Cap de seguridad
 

@@ -4,10 +4,11 @@ title: Hook output 10K char cap on additionalContext/systemMessage/stdout (BREAK
 source: "v4 workflow PoC smoke #3 — detected by adversarial verify"
 source_type: docs
 discovered: 2026-06-03
-status: inbox
+activated: 2026-06-03
+status: active
 tags: [hook-events, breaking, compact, dotforge-hooks-affected]
 tested_in: null
-incorporated_in: []
+incorporated_in: [".claude/rules/domain/hook-events.md, .claude/rules/domain/compaction-strategy.md"]
 replaced_by: null
 priority: high
 ---

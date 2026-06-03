@@ -4,10 +4,11 @@ title: CLAUDE_ENV_FILE preamble execution across Bash subprocesses
 source: "v4 workflow PoC smoke #3 — detected by adversarial verify"
 source_type: docs
 discovered: 2026-06-03
-status: inbox
+activated: 2026-06-03
+status: active
 tags: [hook-events, CLAUDE_ENV_FILE, session-state, direnv-equivalent]
 tested_in: null
-incorporated_in: []
+incorporated_in: [".claude/rules/domain/hook-events.md"]
 replaced_by: null
 priority: high
 ---

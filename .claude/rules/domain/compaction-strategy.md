@@ -31,6 +31,16 @@ Para 1M context (Sonnet 4.6) → 800K tokens. Para 200K (Haiku) → 160K.
 
 **Rewind + "Summarize up to here"** (v2.1.141+) — sexta opción del rewind menu. Comprime el contexto desde el inicio hasta un checkpoint elegido, dejando los turnos posteriores intactos. Distinto a `/compact` (que comprime todo) y a `/clear` (que borra). Usalo cuando los primeros N turnos resolvieron una fase ya cerrada (exploración inicial, pivot, decisión arquitectónica adoptada) y querés preservar los últimos turnos con su detalle completo.
 
+## Hook output context cap impact (BREAKING, 2026)
+
+El cap de 10K chars en `additionalContext` / `systemMessage` / stdout de hooks (ver `hook-events.md` § Channel-specific 10K char cap) impacta directamente la estrategia de compactación de dotforge:
+
+- `post-compact.sh` + `scripts/compact-filter.py` fueron diseñados contra el threshold genérico de 50K. Con 10K específico para `additionalContext`, summaries entre 10K-50K spillean a archivo
+- El modelo recibe `pointer-with-preview` en vez de full inline context → re-anchoring de instrucciones críticas degrada
+- `session-restore.sh` y `session-startup.sh` también emiten `additionalContext` post-compact — si el bloque drift crece >10K, mismo spill
+
+**Re-tune del filter**: target ≤10K chars en compact summary inject, no 50K. Verificar también que startup brief + drift section combinados se mantengan <10K.
+
 ## Anti-patterns confirmados por practitioners
 
 - **Esperar al auto-compact** (96.7%): Avthar — "can hurt performance" mid-task

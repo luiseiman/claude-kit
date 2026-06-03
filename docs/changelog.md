@@ -4,6 +4,30 @@
 >
 > Historial de versiones. Las entradas usan español/inglés mixto según la evolución del proyecto. Los términos técnicos son universales.
 
+## v3.14.0 (2026-06-03)
+
+### `/forge update` from v4 PoC smoke captures — 4 high-value upstream findings
+
+Processes 4 inbox practices captured by the v4 workflow PoC adversarial verify (smoke #3, 2026-06-03). All 4 accepted, all incorporated. These were findings the v3.13 bash `/forge watch` missed — validates that workflows DO catch real gaps even though the cost-quality tradeoff rejects them as default tool (see `docs/v4/SPEC.md`).
+
+#### Domain rules
+
+- **`domain/hook-events.md`** — three new sections:
+  - **Channel-specific 10K char cap (BREAKING, 2026)** — `additionalContext`, `systemMessage`, and plain stdout now capped at 10K chars (separate from older v2.1.89 generic 50K rule). Excess saves to file with pointer-preview reference. dotforge implication: `post-compact.sh` + `compact-filter.py` need retuning to ≤10K target.
+  - **CLAUDE_ENV_FILE preamble execution (4-hook scope)** — expanded from 1-line CwdChanged mention to full coverage. `SessionStart` / `Setup` / `CwdChanged` / `FileChanged` can write `export` statements to `$CLAUDE_ENV_FILE`. Claude Code executes the file as preamble before each Bash subprocess. APPEND-mode warning. SessionStart+CwdChanged pattern for direnv-equivalent.
+  - **SessionStart watchPaths registers persistent FileChanged matchers** — `hookSpecificOutput.watchPaths` registers paths with FSEvents/inotify. Modifications fire `FileChanged` events for the rest of the session with ms latency, no polling. dotforge governance use case: mid-session drift detection on `settings.json`, `behaviors/index.yaml`, `.claude/rules/*`.
+- **`domain/compaction-strategy.md`** — new "Hook output context cap impact" section: 10K cap on `additionalContext` impacts compact-filter design (was targeting 50K). Re-tune required. `session-restore.sh` and `session-startup.sh` audit needed for drift section growth.
+- **`domain/plugin-distribution.md`** — new "Dormant by default — `defaultEnabled: false` (v2.1.154+)" section: plugins can install dormant, require explicit enable. Use cases (ambient cost, external services, opinionated behaviors). Default recommendations for `plugin-generator` skill.
+
+#### Source
+
+All 4 findings detected by `workflows/watch.js` smoke #3 (2026-06-03). The PoC verified each via adversarial cross-check against authoritative sources before reporting. This validates workflow value (quality is real) while confirming cost (~$5-25 per run) keeps them as on-demand escalation rather than default tool. See `docs/v4/SPEC.md` for full PoC findings and v4 scope decision.
+
+#### Practices lifecycle
+
+- 4 inbox → active (hook-output-10k-cap, claude-env-file-preamble, sessionstart-watchpaths, plugin-defaultenabled-dormant)
+- `metrics.yml`: 4 entries added (1 monitoring — hook-output-10k-cap targets compact context loss; 3 informational)
+
 ## v3.13.0 (2026-06-03)
 
 ### `/forge update` from 2026-06-03 watch — v2.1.158 → v2.1.161 coverage + ultracode policy refinements

@@ -4,10 +4,11 @@ title: Plugin defaultEnabled false (v2.1.154) — install dormant pattern
 source: "v4 workflow PoC smoke #3 — detected by adversarial verify"
 source_type: docs
 discovered: 2026-06-03
-status: inbox
+activated: 2026-06-03
+status: active
 tags: [plugin-distribution, v2.1.154, opt-in, marketplace]
 tested_in: null
-incorporated_in: []
+incorporated_in: [".claude/rules/domain/plugin-distribution.md"]
 replaced_by: null
 priority: medium
 ---

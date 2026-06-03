@@ -1200,3 +1200,43 @@ practices:
     status: informational
     projects_applied: 0
     last_checked: null
+  - id: practice-2026-06-03-hook-output-10k-cap
+    error_targeted: "compact summary inject >10K spills to file as pointer-with-preview, model loses inline context post-compaction"
+    error_type: config
+    activated: 2026-06-03
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: monitoring
+    projects_applied: 0
+    last_checked: null
+  - id: practice-2026-06-03-claude-env-file-preamble
+    error_targeted: null
+    error_type: null
+    activated: 2026-06-03
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: null
+  - id: practice-2026-06-03-sessionstart-watchpaths
+    error_targeted: null
+    error_type: null
+    activated: 2026-06-03
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: null
+  - id: practice-2026-06-03-plugin-defaultenabled-dormant
+    error_targeted: null
+    error_type: null
+    activated: 2026-06-03
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 0
+    last_checked: null

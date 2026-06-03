@@ -59,6 +59,54 @@ Standard output fields all hooks may return:
 - `systemMessage: string` — inject a system-style message into context
 - `terminalSequence: string` (v2.1.141+) — emit raw escape sequences for desktop notifications (OSC 9 on iTerm2/macOS), window titles (`\033]0;<title>\007`), or terminal bell (`\a`). Works without a controlling TTY, so hooks can signal the user during background sessions. Example: `{"terminalSequence":"]0;Build green"}`
 
+### Channel-specific 10K char cap (BREAKING, 2026)
+
+**`additionalContext`, `systemMessage`, and plain stdout are now capped at 10,000 characters** (separate from the older v2.1.89 generic 50K spill-to-file rule). When any of these channels exceeds 10K chars, the excess is saved to a file in the session directory and the model receives a `pointer-with-preview` reference instead of the inline content.
+
+dotforge implication: `template/hooks/post-compact.sh` + `scripts/compact-filter.py` were designed against the 50K threshold. With 10K, moderately-filtered compact summaries (between 10K and 50K chars) spill to file → the model sees a pointer instead of the full summary inline. `session-restore.sh` and `session-startup.sh` are also at risk — they emit `additionalContext` and may exceed 10K post-compaction if drift section grows. Re-tune compact-filter target to ≤10K. Audit any custom project hooks that emit verbose context.
+
+## CLAUDE_ENV_FILE preamble execution (4-hook scope)
+
+`CLAUDE_ENV_FILE` is a session-scoped file that **4 hook events** can write to in order to persist environment variables across all subsequent Bash tool subprocesses. Claude Code executes the file as a preamble script before each Bash invocation — direnv-equivalent built into Claude Code.
+
+The 4 hooks with `$CLAUDE_ENV_FILE` access:
+- `SessionStart` — set baseline env at session start
+- `Setup` — set env for CI/maintenance runs
+- `CwdChanged` — re-source env on directory change (direnv pattern)
+- `FileChanged` — react to `.env` file modifications
+
+**APPEND-mode warning:** Claude Code appends to `$CLAUDE_ENV_FILE`. Do NOT point it at an existing source script — your script gets corrupted with appended exports.
+
+Pattern (SessionStart + CwdChanged for direnv-equivalent):
+```bash
+# SessionStart hook
+#!/bin/bash
+if [ -n "$CLAUDE_ENV_FILE" ] && [ -f ".env" ]; then
+  grep -v '^#' .env | sed 's/^/export /' >> "$CLAUDE_ENV_FILE"
+fi
+```
+
+Use cases for dotforge-managed projects: TRADINGBOT (broker creds per env), cotiza-api-cloud (WebSocket env vars), InviSight-iOS (Supabase tokens), GCP/AWS projects with cloud creds. Reduces per-call env injection workarounds.
+
+## SessionStart watchPaths registers persistent FileChanged matchers
+
+`SessionStart` hooks can return `hookSpecificOutput.watchPaths` (array of file paths). Claude Code registers these paths with the OS-level file watcher (**FSEvents** on macOS, **inotify** on Linux). For the rest of the session, modifications to any registered path automatically fire `FileChanged` events — no polling, millisecond latency.
+
+```json
+{
+  "hookSpecificOutput": {
+    "additionalContext": "...",
+    "watchPaths": [
+      ".claude/settings.json",
+      ".claude/rules/_common.md",
+      "behaviors/index.yaml"
+    ]
+  }
+}
+```
+
+dotforge governance use case: today `pre-session-check.sh` (Setup hook) validates governance-critical files (`settings.json`, `behaviors/index.yaml`, `.claude/rules/*.md`) at session boundaries only. With `watchPaths`, mid-session drift can be detected inline — a user-side edit or subagent mutation triggers `FileChanged` immediately. Pair with a `FileChanged` hook to re-validate or warn.
+
 ## Stop hook contract (v2.1.143+)
 
 - Stop hooks that return `decision: "block"` repeatedly were able to loop forever (block → retry → block). A cap was added: **8 consecutive blocks** terminate the turn with a warning

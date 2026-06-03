@@ -47,6 +47,32 @@ For dotforge specifically: candidates to migrate are `practices/metrics.yml` (co
 
 Plugins dropped in `.claude/skills/<name>/` **auto-load without marketplace registration**. Scaffold a new one with `claude plugin init <name>` (writes a minimal `plugin.json` + `SKILL.md` skeleton). Collapses the boundary between "skill" (project-local, no distribution) and "plugin" (distributable artifact) — even local-only experiments can be plugins now, because the marketplace metadata is no longer required to load them.
 
+## Dormant by default — `defaultEnabled: false` (v2.1.154+)
+
+Plugin manifests (and marketplace entries) can declare `"defaultEnabled": false`. When set, the plugin installs **dormant** — present on disk but inactive until the user explicitly runs `/plugin` or `claude plugin enable`. Dependencies of an explicitly-enabled plugin still auto-enable transitively. User settings persist across updates — flipping `defaultEnabled` later does not override a user's prior choice.
+
+```json
+{
+  "name": "expensive-monitor",
+  "defaultEnabled": false,
+  "description": "Periodic poll of an external API — opt-in to control cost"
+}
+```
+
+**When to use `defaultEnabled: false`:**
+
+- Plugin has ambient cost (periodic hooks, large rule injections)
+- Touches external services (MCP server connectors, cloud APIs)
+- Opinionated behaviors the user may not want by default (strict verify modes, blocking governance)
+- Production-tier policies that need explicit per-project opt-in
+
+**When `defaultEnabled: true` (default behavior):**
+
+- Core lifecycle skills users always need (init, audit, sync, capture)
+- Read-only utilities with no ambient cost
+
+dotforge `plugin-generator` skill should default new manifests to `defaultEnabled: true` for core lifecycle skills, `defaultEnabled: false` for opinionated or cost-bearing additions.
+
 ## When to plugin vs `.claude/`
 
 | Need | Use |

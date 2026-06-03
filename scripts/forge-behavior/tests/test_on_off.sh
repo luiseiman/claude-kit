@@ -8,9 +8,12 @@ cli_test_init
 
 # ---------- Project scope ----------
 
-# Verify initial state
+# Establish a known baseline. search-first ships enabled=false since v3.6.1
+# (flag-consume false positives), so this on/off cycle test sets its own
+# starting state instead of assuming the shipped default.
+bash "$CLI" on search-first --project >/dev/null || { printf 'FAIL: baseline on project\n' >&2; exit 1; }
 initial=$(yaml_enabled_by_id "${FORGE_BEHAVIORS_DIR}/index.yaml" "search-first")
-assert_eq "true" "$initial" "initial enabled in index.yaml" || exit 1
+assert_eq "true" "$initial" "baseline enabled in index.yaml" || exit 1
 
 # Disable at project scope
 bash "$CLI" off search-first --project >/dev/null || { printf 'FAIL: off project\n' >&2; exit 1; }

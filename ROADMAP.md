@@ -1,10 +1,42 @@
 # Roadmap dotforge
 
-Estado actual: **v3.13.0** (2026-06-03) — Workflow security boundary clarification (workflow subagents bypass session permission mode) + ultracode runtime layer (`/effort ultracode` activator + `/deep-research` bundled workflow) + sync v2.1.158→v2.1.161 (acceptEdits security prompts, keyword rename `workflow`→`ultracode`, PostToolBatch failure isolation, Mantle as 4th enterprise provider).
+Estado actual: **v4.0.0** (2026-06-03) — Major release. Override capture loop closes practices↔behaviors (bash script + SessionStart hook). Audit checklist items 16-17 (workflow availability + override loop active). `domain/workflow-economics.md` documents v4 PoC findings rejecting "workflow-native everywhere" thesis on cost-quality grounds. `workflows/watch.js` ships as REFERENCE implementation (not promoted to `/forge watch` default). Migration script with `--dry-run` + atomic backup + `--rollback`.
 
 ---
 
 ## Completado
+
+### v4.0.0 — Override capture loop + workflow economics rule + audit items 16-17 (2026-06-03)
+
+Phase 0 PoC (4 smoke tests of `workflows/watch.js`) rejected the "workflow-native everywhere" thesis. v4 scope reduced from "refactor every multi-step skill" to override loop + audit items + workflows-as-reference.
+
+#### Override capture loop (Phase 1)
+- `scripts/process-override-log.sh` (260 líneas bash, 10/10 tests verde, idempotente)
+- `session-start-process-overrides.sh` wrappers (template + .claude/) wired in SessionStart
+- Processes `.forge/audit/overrides.log`, agrupa por `(project, behavior_id, tool_name)` en ventana 30d, crea `practices/inbox/auto-override-*.md` cuando count ≥ 3
+- Cost: 0 LLM calls, pure bash
+
+#### Workflow economics (lección del PoC)
+- `domain/workflow-economics.md` (nueva rule, ~110 líneas) — decision matrix workflow vs skill, 10 token economy principles, per-stage model routing
+- 4 PoC smoke tests medidos: workflow refactor de `/forge watch` = 4-25x más caro que baseline. Verify-sin-WebSearch causa quality regression
+- `workflows/watch.js` queda como REFERENCE implementation. `/forge watch` sigue siendo bash skill (production tool)
+
+#### Audit checklist items 16-17 (Phase 2)
+- Item 16: workflow availability (workflows/ dir + meta block)
+- Item 17: override capture loop active (log + hook wired)
+- `skills/audit-project/SKILL.md` extendido con transition note: v3.x dotforge auto-passes items 16-17 (informational); v4.0+ scores normally
+
+#### Migration tooling (Phase 3)
+- `scripts/migrate-v3-to-v4.sh` con `--dry-run` mandatorio, atomic .claude/ backup, `--rollback`
+- 4 acciones evaluadas independientemente: install hook, wire in settings, init log, update manifest
+- NO toca CLAUDE.md, behaviors, rules, agents, commands
+- `docs/v4/MIGRATION-V3-TO-V4.md` guía completa con waves recomendadas
+
+#### Recomended rollout (12 proyectos managed)
+- Wave 1 pilot: vault-bot
+- Wave 2 heavy/production: dotforge (self) + InviSight-iOS + TRADINGBOT + cotiza-api-cloud + jira-nbch
+- Wave 3 rest: cds-dashboard + openclaw + derup + crm + Whassap signals
+- Skip: SOMA + SOMA2 (archived)
 
 ### v3.13.0 — Workflow security boundary + ultracode runtime + v2.1.158-161 sync (2026-06-03)
 

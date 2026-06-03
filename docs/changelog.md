@@ -4,6 +4,78 @@
 >
 > Historial de versiones. Las entradas usan español/inglés mixto según la evolución del proyecto. Los términos técnicos son universales.
 
+## v4.0.0 (2026-06-03)
+
+### Major release — override capture loop, workflow economics rule, audit items 16-17
+
+dotforge v4 closes the practices↔behaviors loop with an automatic override capture mechanism, ships `workflows/watch.js` as a reference implementation (NOT promoted to default `/forge watch`), and documents the cost-quality tradeoffs that determined v4's narrow scope.
+
+This is a **non-breaking minor migration** in terms of functionality. Existing v3 projects continue to work unchanged. Audit scoring changes — perfect v3 projects score ~9.5/10 v4 until migrated. See [`docs/v4/MIGRATION-V3-TO-V4.md`](v4/MIGRATION-V3-TO-V4.md) for the rollout guide.
+
+#### What's new
+
+##### Override capture loop (Phase 1)
+
+- **`scripts/process-override-log.sh`** (260 lines bash) — processes `.forge/audit/overrides.log`, groups by `(project, behavior_id, tool_name)` in a 30-day window, creates `practices/inbox/auto-override-*.md` for behaviors overridden ≥3 times. Idempotent: same input → same output, no duplicates on re-run.
+- **`template/hooks/session-start-process-overrides.sh`** + **`.claude/hooks/session-start-process-overrides.sh`** — SessionStart hook wrappers (timeout 5s, non-blocking).
+- **`tests/test-process-override-log.sh`** — 10 test cases covering empty log, missing log, below/at threshold, idempotent re-run, skip if already captured, multiple groups, missing config, out-of-window entries, frontmatter integrity. All green.
+
+##### Workflow economics (the lesson from PoC)
+
+- **`.claude/rules/domain/workflow-economics.md`** (new domain rule, ~110 lines) — documents the cost-quality tradeoffs measured in 4 PoC smoke tests. Decision matrix: when workflow vs skill. Token economy principles. Per-stage model routing (Haiku for mechanical work, Sonnet for judgment).
+- **`workflows/watch.js`** stays as REFERENCE implementation. `/forge watch` continues as bash skill (4-25x cheaper than workflow refactor with same or better quality after manual review).
+- **`docs/v4/SPEC.md`** preserves the full PoC findings as governance record.
+
+##### Audit checklist items 16-17
+
+- **Item 16: workflow availability (0-1)** — `workflows/` directory exists with at least one `.js` file containing `export const meta`. Score is deliberately low (1 pt) — workflows are governance signal, not quality measure.
+- **Item 17: override capture loop active (0-1)** — `.forge/audit/overrides.log` exists AND `session-start-process-overrides.sh` wired in `.claude/settings.json` SessionStart.
+- **`skills/audit-project/SKILL.md`** extended to evaluate items 13-17 with v4 transition note (v3.x dotforge auto-passes items 16-17 as informational; v4.0+ scores them normally).
+
+##### Migration tooling (Phase 3)
+
+- **`scripts/migrate-v3-to-v4.sh`** — idempotent migration script with mandatory `--dry-run` mode, atomic `.claude/` backup, `--rollback` support. Four actions evaluated independently: install hook, wire in settings.json, init override log, update manifest. Does NOT touch CLAUDE.md, behaviors, rules, agents, commands, or any project content.
+- **`docs/v4/MIGRATION-V3-TO-V4.md`** — full rollout guide with per-project steps, verification commands, suggested wave order for 12 managed projects, rollback instructions.
+
+#### What v4 is NOT (the PoC lesson)
+
+The original v4 thesis was "workflow-native everywhere — convert multi-step skills to workflows for adversarial verify by default". **Phase 0 PoC rejected this** on cost-quality grounds:
+
+- 4 smoke tests measured `workflows/watch.js` at $5-25 per run vs $0.75-1.00 baseline
+- Per-agent overhead (~80K tokens) dominates over model-routing savings
+- Verify-without-WebSearch (cost optimization) caused quality regression in smoke #4
+- Model routing (Haiku parse + Sonnet verify) helps but does not reach cost parity
+
+Workflows remain available as on-demand escalation tool, not as default refactor of mechanical lifecycle work. `/forge sync-all`, `/forge audit`, `/forge update`, `/forge watch` stay as bash skills. `workflows/watch.js` is documented reference, not production tool.
+
+#### Migration
+
+```bash
+cd <project>
+DOTFORGE_DIR=<path> bash $DOTFORGE_DIR/scripts/migrate-v3-to-v4.sh --dry-run
+DOTFORGE_DIR=<path> bash $DOTFORGE_DIR/scripts/migrate-v3-to-v4.sh
+```
+
+Full guide: [`docs/v4/MIGRATION-V3-TO-V4.md`](v4/MIGRATION-V3-TO-V4.md).
+
+Suggested rollout: vault-bot (pilot) → InviSight-iOS/TRADINGBOT/cotiza-api-cloud (heavy/production) → rest. SOMA/SOMA2 archived.
+
+#### Internal additions documented for future reference
+
+Files committed in this release:
+
+- `scripts/process-override-log.sh`, `scripts/migrate-v3-to-v4.sh`
+- `template/hooks/session-start-process-overrides.sh`, `.claude/hooks/session-start-process-overrides.sh`
+- `template/settings.json.tmpl` (wired hook), `.claude/settings.json` (self-hosting wired)
+- `tests/test-process-override-log.sh`
+- `audit/checklist.md` (items 16-17)
+- `skills/audit-project/SKILL.md` (extended for v4 items)
+- `.claude/rules/domain/workflow-economics.md`
+- `workflows/watch.js` (reference)
+- `docs/v4/SPEC.md`, `docs/v4/MIGRATION-V3-TO-V4.md`
+
+VERSION 3.14.0 → 4.0.0.
+
 ## v3.14.0 (2026-06-03)
 
 ### `/forge update` from v4 PoC smoke captures — 4 high-value upstream findings

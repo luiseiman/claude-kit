@@ -8,7 +8,7 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/luiseiman/dotforge)](https://github.com/luiseiman/dotforge/stargazers)
 [![License: MIT](https://img.shields.io/github/license/luiseiman/dotforge)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.13.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-4.0.0-blue)](VERSION)
 [![Last commit](https://img.shields.io/github/last-commit/luiseiman/dotforge)](https://github.com/luiseiman/dotforge/commits/main)
 
 **Behavior governance for [Claude Code](https://docs.anthropic.com/en/docs/claude-code).** Declare runtime policies on tool calls — "search before writing", "no destructive git", "verify before shipping" — and enforce them via compiled `PreToolUse` hooks that share a session-scoped state file. Escalates silently → nudge → warning → soft_block → hard_block, with a permanent override audit trail.
@@ -31,6 +31,21 @@ bootstrap → audit → sync → capture → propagate → behaviors
 ```
 
 For people and teams managing more than one Claude Code project.
+
+## v4.0 — what's new (2026-06-03)
+
+### Override capture loop closes practices↔behaviors (v4.0.0)
+
+- **`scripts/process-override-log.sh`** — bash script that processes `.forge/audit/overrides.log` and auto-creates `practices/inbox/auto-override-*.md` for behaviors overridden ≥3 times in 30 days. Idempotent. 10/10 tests green. Cost: 0 LLM calls, pure bash.
+- **`session-start-process-overrides.sh`** wired in `SessionStart` (template + self-hosting) — auto-captures frequent overrides as practices on every session start.
+- **`scripts/migrate-v3-to-v4.sh`** — safe migration script with mandatory `--dry-run`, atomic backup, `--rollback`. See [`docs/v4/MIGRATION-V3-TO-V4.md`](docs/v4/MIGRATION-V3-TO-V4.md).
+- **Audit checklist items 16-17** — workflow availability + override loop active. Score impact: v3-perfect projects report ~9.5/10 v4 until migrated.
+- **`domain/workflow-economics.md`** (new domain rule) — documents v4 PoC cost-quality findings. Decision matrix: when workflow vs skill. Token economy principles. **TL;DR: workflows are 4-25x more expensive than bash skills for recurring work — use only as on-demand escalation, not as default refactor.**
+- **`workflows/watch.js`** ships as REFERENCE implementation, NOT promoted to `/forge watch` default. The bash skill remains the production tool.
+
+### What v4 is NOT
+
+The original v4 thesis ("workflow-native everywhere") was REJECTED in Phase 0 PoC. 4 smoke tests measured `workflows/watch.js` at $5-25 per run vs $0.75-1.00 baseline. `/forge sync-all`, `/forge audit`, `/forge update`, `/forge watch` stay as bash skills. Full PoC findings in [`docs/v4/SPEC.md`](docs/v4/SPEC.md).
 
 ## v3.13 — what's new (2026-06-03)
 
@@ -285,7 +300,7 @@ Orchestration follows a decision tree: researcher → architect → implementer 
 `/forge audit` scores your project's Claude Code configuration on a 10-point scale:
 
 - **5 obligatory items** (scored 0-2): CLAUDE.md, settings.json, rules with globs, block-destructive hook, build/test commands
-- **10 recommended items** (scored 0-1): CLAUDE_ERRORS.md, lint hook, custom commands, memory, agents + orchestration rule, .gitignore secrets, prompt injection scan, auto-mode safety, v3 behaviors enforcement, OS-level sandboxing
+- **12 recommended items** (scored 0-1): CLAUDE_ERRORS.md, lint hook, custom commands, memory, agents + orchestration rule, .gitignore secrets, prompt injection scan, auto-mode safety, v3 behaviors enforcement, OS-level sandboxing, **v4 workflow availability**, **v4 override capture loop active**
 - **Project tier**: simple/standard/complex adjusts scoring expectations
 - **Security cap**: missing settings.json or block-destructive hook caps score at 6.0
 
@@ -314,7 +329,9 @@ See [practices/README.md](practices/README.md) for the lifecycle and format.
 - [Anatomy of CLAUDE.md](docs/anatomy-claude-md.md) — Deep dive into project instructions
 - [Memory Strategy](docs/memory-strategy.md) — 5-layer memory policy for agents
 - [Troubleshooting](docs/troubleshooting.md) — Common problems and diagnostics
-- [Changelog](docs/changelog.md) — Version history (v0.1.0 → v3.13.0)
+- [Changelog](docs/changelog.md) — Version history (v0.1.0 → v4.0.0)
+- [v4 Spec + PoC findings](docs/v4/SPEC.md) — Workflow-vs-skill decision matrix, cost measurements
+- [v4 Migration Guide](docs/v4/MIGRATION-V3-TO-V4.md) — Per-project rollout from v3.x to v4.0
 - [Roadmap](ROADMAP.md) — Completed features + upcoming
 
 ## Requirements
@@ -579,7 +596,9 @@ Ver [practices/README.md](practices/README.md) para el ciclo de vida y formato.
 - [Anatomy of CLAUDE.md](docs/anatomy-claude-md.md) — Análisis detallado de las instrucciones de proyecto
 - [Memory Strategy](docs/memory-strategy.md) — Política de memoria de 5 capas para agentes
 - [Troubleshooting](docs/troubleshooting.md) — Problemas comunes y diagnósticos
-- [Changelog](docs/changelog.md) — Historial de versiones (v0.1.0 → v3.13.0)
+- [Changelog](docs/changelog.md) — Historial de versiones (v0.1.0 → v4.0.0)
+- [Spec v4 + hallazgos del PoC](docs/v4/SPEC.md) — Matriz de decisión workflow vs skill, mediciones de costo
+- [Guía de migración v4](docs/v4/MIGRATION-V3-TO-V4.md) — Rollout proyecto por proyecto
 - [Roadmap](ROADMAP.md) — Features completadas + próximas
 
 ## Requisitos

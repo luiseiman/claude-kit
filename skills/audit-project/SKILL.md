@@ -64,7 +64,7 @@ For each checklist item, verify existence **and quality**:
    - Is it referenced in `.claude/settings.json` under hooks?
 5. **Build/test commands** — Are they in CLAUDE.md? Do they match the detected stack?
 
-### Recommended (0-7 bonus points)
+### Recommended (0-10 bonus points)
 6. **CLAUDE_ERRORS.md** — Does it exist with table format with Type column?
 7. **Hook lint** — Does it exist? Is it executable? (verify `chmod +x`)
 8. **Custom commands** — Are there files in `.claude/commands/`?
@@ -72,19 +72,30 @@ For each checklist item, verify existence **and quality**:
 10. **Agents** — Is there `.claude/agents/` + `agents.md` rule in rules?
 11. **.gitignore** — Does it protect .env, *.key, *.pem, credentials?
 12. **Prompt injection scan** — Are rules/CLAUDE.md free of suspicious patterns?
+13. **Auto mode safety** — If `permissions.defaultMode: "auto"` in settings.json, is the deny list complete? (auto-pass if not auto)
+14. **v3 behaviors compiled** — Are there `.claude/hooks/generated/*.sh` AND referenced in settings.json? (Project that hasn't opted into v3 governance scores 0; non-applicable cap does NOT apply)
+15. **OS-level sandboxing** — `sandbox.enabled: true` with at least one restriction OR project demonstrably handles no secrets (auto-pass)
+16. **Workflow availability (v4)** — `workflows/` directory exists with at least one `.js` file containing `export const meta` block. Auto-pass if project has not opted into v4 (no `workflows/` reference in `audit/scoring.md` for v3.x projects).
+17. **Override capture loop active (v4)** — `.forge/audit/overrides.log` exists AND `session-start-process-overrides.sh` wired in `.claude/settings.json` SessionStart. Auto-pass if project hasn't installed v3 behaviors (no `behaviors/` dir).
 
 **Tier adjustments:**
 - `simple`: items 8-10 score 0 don't penalize (treated as N/A)
 - `complex`: items 8-10 become semi-obligatory (each 0-2 instead of 0-1)
 
+**v4 transition note:** Items 16-17 are documented in `audit/checklist.md` but enforcement varies by dotforge version:
+- v3.x: items 16-17 auto-pass (informational only)
+- v4.0+: items 16-17 contribute to score per normal rules
+
+To detect target enforcement: check `$DOTFORGE_DIR/VERSION` — if major < 4, treat items 16-17 as informational.
+
 ## Step 4: Calculate score
 
 Use weights from `$DOTFORGE_DIR/audit/scoring.md`:
 1. `score_obligatory = sum(items 1-5)` — maximum 10
-2. `score_recommended = sum(items 6-12)` — maximum 7
-3. `score_total = score_obligatory * 0.7 + score_recommended * (3.0 / 7)` — max 7.0 + 3.0 = 10.0
+2. `score_recommended = sum(items 6-15)` — maximum 10 (v3) or `sum(items 6-17)` — maximum 12 (v4)
+3. `score_total = score_obligatory * 0.7 + score_recommended * (3.0 / max_recommended)` — max 7.0 + 3.0 = 10.0
 4. Apply tier adjustments before calculating (see Step 1b)
-4. `score_normalized = min(score_total, 10)`
+5. `score_normalized = min(score_total, 10)`
 
 **Security cap:** If item 2 (settings.json) or item 4 (block-destructive) is 0, maximum score = 6.0.
 
@@ -114,6 +125,11 @@ Score: {{X.X}}/10 {{level}}
 {{✅|⚠️}} Agents — {{detail}}
 {{✅|⚠️}} .gitignore — {{detail}}
 {{✅|⚠️}} Prompt injection scan — {{detail}}
+{{✅|⚠️}} Auto mode safety — {{detail: auto mode active/inactive, deny list complete/incomplete}}
+{{✅|⚠️}} v3 behaviors compiled — {{detail: N generated hooks, settings reference yes/no}}
+{{✅|⚠️}} OS sandboxing — {{detail: enabled/disabled, secret indicators yes/no}}
+{{✅|⚠️|—}} v4 workflow availability — {{detail: N .js workflows OR "n/a v3 project"}}
+{{✅|⚠️|—}} v4 override loop active — {{detail: hook wired yes/no, log exists yes/no, OR "n/a no v3 behaviors"}}
 
 ── DOMAIN KNOWLEDGE ──
 Role defined:     {{✓ if ## Role exists in CLAUDE.md with content | ✗ otherwise}}

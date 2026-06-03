@@ -8,7 +8,7 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/luiseiman/dotforge)](https://github.com/luiseiman/dotforge/stargazers)
 [![License: MIT](https://img.shields.io/github/license/luiseiman/dotforge)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.9.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-3.13.0-blue)](VERSION)
 [![Last commit](https://img.shields.io/github/last-commit/luiseiman/dotforge)](https://github.com/luiseiman/dotforge/commits/main)
 
 **Behavior governance for [Claude Code](https://docs.anthropic.com/en/docs/claude-code).** Declare runtime policies on tool calls — "search before writing", "no destructive git", "verify before shipping" — and enforce them via compiled `PreToolUse` hooks that share a session-scoped state file. Escalates silently → nudge → warning → soft_block → hard_block, with a permanent override audit trail.
@@ -32,90 +32,41 @@ bootstrap → audit → sync → capture → propagate → behaviors
 
 For people and teams managing more than one Claude Code project.
 
-## v3.9 — what's new (2026-05-22)
+## v3.13 — what's new (2026-06-03)
 
-### Sync from Claude Code v2.1.141-143 (v3.9.0)
+### Workflow security boundary + ultracode runtime layer (v3.13.0)
 
-- **Stop hook 8-block convergence cap** — Stop hooks returning `decision: "block"` repeatedly used to loop forever. Now capped at 8 consecutive blocks (`CLAUDE_CODE_STOP_HOOK_BLOCK_CAP` to override). Anti-pattern documented in `domain/hook-architecture.md` and `domain/hook-events.md`.
-- **`terminalSequence` hook output (v2.1.141+)** — hooks can emit escape sequences for desktop notifications, window titles, terminal bell without controlling-TTY. New "Hook JSON output fields (universal)" section in `domain/hook-events.md`.
-- **`claude agents` as launcher (v2.1.141-143)** — 9 flags (`--cwd`, `--add-dir`, `--settings`, `--mcp-config`, `--plugin-dir`, `--permission-mode`, `--model`, `--effort`, `--dangerously-skip-permissions`) configure dispatched bg sessions. `/bg` detach preserves them. Documented in `domain/cli-flags.md` and `domain/parallel-sessions.md`.
-- **`worktree.bgIsolation: "auto"|"none"` (v2.1.143)** — opt-out from auto-worktree for `--bg` sessions in repos where worktrees are impractical (Bazel, codegen-to-root, deep `.gitmodules`). Trade-offs documented in `domain/parallel-sessions.md`.
-- **Rewind + "Summarize up to here" (v2.1.141)** — sixth rewind menu option. Compresses context from session start to a chosen checkpoint, preserves later turns. New modality in `domain/compaction-strategy.md`.
-- **Fast mode default flipped to Opus 4.7 (v2.1.142)** — `/fast` now uses 4.7. Pin to 4.6 with `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE=1` only if benchmark reproducibility matters.
-- **Plugin dependency enforcement (v2.1.143)** — `claude plugin disable` refuses if other plugins depend on the target (shows disable-chain). `enable` force-enables transitive deps. `skills/plugin-generator/SKILL.md` updated to declare `dependencies: []` in generated `plugin.json`.
-- **Plugin flat shape (v2.1.142+)** — `SKILL.md` at plugin root (no `skills/` dir) is now surfaced automatically. `plugin-generator` skill picks flat vs structured based on component count.
+- **Workflow subagents bypass session permission mode** — workflow-spawned subagents always run in `acceptEdits` regardless of session mode (including `plan`). File edits auto-approved. Documented in `domain/workflow-automation.md`, `domain/workflow-and-ultracode-policy.md`, `domain/permission-model.md`. Reinforces that `permissions.deny` is the only kernel-level backstop for production-tier projects using workflows.
+- **`/effort ultracode` runtime activator** — xhigh reasoning + automatic workflow orchestration per substantive task. Closes the loop with dotforge's tier-based ultracode policy: `production`/`heavy` tier → activate via `/effort ultracode` at session start. `session-startup.sh` now emits actionable hint.
+- **`/deep-research` bundled workflow** — Claude Code ships built-in workflow that fans out web searches, cross-checks sources, returns cited report.
+- **v2.1.160 acceptEdits security prompts** — shell rc files (`.zshenv`/`.zlogin`/`.bash_login`/`~/.config/git/`) always prompt; build-tool config (`.npmrc`/`.yarnrc*`/`bunfig.toml`/`.bazelrc`/`.pre-commit-config.yaml`/`.devcontainer/`) prompts in `acceptEdits`. Defense-in-depth pattern with `sandbox.filesystem.denyWrite`.
+- **v2.1.160 keyword rename `workflow` → `ultracode`** — the trigger keyword changed. Setting key `workflowKeywordTriggerEnabled` unchanged. Anti-confusion guidance for dotforge ultracode-tier semantics in CLAUDE.md.
+- **v2.1.161 PostToolBatch failure isolation** — failed Bash no longer cancels other parallel calls in the batch. Hook logic must inspect per-tool success.
+- **Small additions**: Mantle as new enterprise provider (Bedrock/Vertex/Foundry/Mantle), `CLAUDE_CODE_ENABLE_AUTO_MODE=1` opt-in for third-party platforms, `claude mcp` `${VAR}` no longer expanded in CLI output (security fix), single-file grep satisfies read-before-edit, OTEL `OTEL_RESOURCE_ATTRIBUTES` as metric labels + `tool_decision.tool_parameters` with `OTEL_LOG_TOOL_DETAILS=1`, `claude agents` shows `done/total`.
 
-### Auth model + docs domain migration (v3.8.0-v3.8.1)
+### Workflow + Ultracode policy (v3.12.0–v3.12.1)
 
-- **New `domain/auth.md`** documenting `ANTHROPIC_API_KEY` / `CLAUDE_CODE_OAUTH_TOKEN` / Claude.ai login precedence and the v2.1.139+ rule that API-key presence disables Remote Control, `/schedule`, and notification preferences (anti-pattern: `ANTHROPIC_API_KEY` in `.bashrc` silently disables features). CI canonical path documented (`claude setup-token`).
-- **`docs.anthropic.com` → `code.claude.com` migration** — all internal references and link rules updated; `domain/cli-flags.md` last-verified bumped.
+- **`domain/workflow-and-ultracode-policy.md`** (new, ~65 lines) — canonical separation: **Workflow = TOOL** (per-task), **Ultracode = MODE** (per-project posture via registry tier). 5 decision criteria (Blast radius, Domain risk, Ambiguity, Reversibility, Prior failure), 4 tiers (`light`/`standard`/`heavy`/`production`), portfolio table for 12 projects.
+- **`/forge ultracode-check`** — slash command that reads registry tier + git state + last-startup, applies the 5 criteria, returns "ON | CONSIDER | OFF" with score and reasoning.
+- **`session-startup.sh`** — emits `Ultracode tier: <tier> — <hint>` per-project from `registry/projects.local.yml`.
+- **Designed via Workflow tool** (4 phases, 9 agents, adversarial verify) — verify pass caught 4 critical issues + 2 classification fixes before applying.
 
-### Smart init + smart auto-compact (v3.6.3 + v3.7.0 + v3.7.1)
+### Resolved /workflows TODO + 5 more (v3.11.0)
 
-- **Smart auto-compact** — `scripts/compact-filter.py` pipes `compact_summary` through a conservative filter before persisting to `last-compact.md`. Rotating history under `.claude/session/compact-history/`. Worst case: file unchanged (filter is a safety net).
-- **Smart init** — `session-startup.sh` (SessionStart hook for all sources except `compact`) captures branch, HEAD, working-tree count, recent edits (24h), pending TODOs, behaviors disabled. Compares against last snapshot for drift. Injects brief into context only when noteworthy.
-- **Setup hook validation** — `pre-session-check.sh` wired in `Setup` (matchers `init`, `maintenance`). Validates `settings.json` JSON, `block-destructive.sh` executable, `behaviors/index.yaml` YAML, all wired hooks present + executable. Exit 2 blocks session start.
-- **Evidence-based compaction policy** — research combining academia (Liu et al., Chroma, Kamradt) and field practice (Boris Cherny, Daniel San, Avthar, Paweł Huryn) consolidated. Canonical threshold: **80%** of context window. New `pre-compact-warning.sh` UserPromptSubmit hook warns at 80%/90%. `/forge compact-task` and `/forge context-status` slash commands.
+- **`/workflows` full coverage** — TODO in `domain/workflow-automation.md` resolved. Documents declarative `meta` block, 5 primitives (`agent`/`parallel`/`pipeline`/`phase`/`log`/`workflow`), schema validation, concurrency cap (`min(16, cores-2)`, 1000 agents lifetime), budget integration, resume via `runId`, pipeline vs parallel decision, quality patterns (adversarial verify, judge panel, loop-until-dry, completeness critic).
+- **Worktree lifecycle improvements** — auto-unlock on agent finish (no more stuck worktrees), `EnterWorktree` mid-session switching. `skills/sync-all-repos/SKILL.md` updated with stuck-worktree detection.
+- **`StopFailure` matchers documented** — `rate_limit`/`authentication_failed`/`billing_error`/`server_error` for production-grade routing. `template/hooks/session-report.sh` extended to parse `error_type`.
+- **Agent frontmatter hooks** — documented in `domain/agent-orchestration.md` (architectural; wiring to `agents/*.md` pending schema verification).
+- **Settings hardening bundle** — `claudeMd` inline managed key, `ConfigChange` matcher values, PowerShell `if:` pattern fix, unrecognized hook event resilience.
 
-### Audit hardening (v3.6.1 → v3.6.2)
+### `/forge sync-all` skill (v3.10.1)
 
-- **`search-first` behavior disabled** — flag-consume design generated false positives in sessions with prior context.
-- **Permission rule split** — `domain/permission-model.md` (112 → 59 lines) + new `domain/permission-managed-settings.md` (60 lines, distinct globs).
-- **Inbox signal gate** — `detect-claude-changes.sh` skips auto-stub captures when total < 15 files and no structural change.
-- **Honest validation rate** — `not-applicable` renamed to `informational`. Practices that don't target a specific error are excluded from the validation rate calc.
+- **New `skills/sync-all-repos/SKILL.md`** — discovers every GitHub-backed repo on the machine, classifies sync state (in parallel with timeouts), auto-executes pull/push/rebase for obvious cases, defers dirty/non-main to Claude. Handles macOS Finder duplicates (`* 2.*` files), worktree submodule traps, stale lock files. Designed for Mac↔VPS workflow without direct coordination — each machine syncs with GitHub independently.
+- **`.dotforge-sync-ignore`** opt-out marker for archived or broken repos.
 
-### Sync from Claude Code v2.1.120-128 (v3.5.0 → v3.6.0)
+### Earlier versions
 
-- **`Setup` event** added to dotforge's catalogue. **`PostToolUse.updatedToolOutput`** generalized to all tools (v2.1.121+). **5 managed-only enterprise fields** documented. **`alwaysLoad: true`** per-MCP-server option. **`workspace`** reserved as MCP server name. **`disable-model-invocation`** frontmatter field. **`${CLAUDE_EFFORT}`** runtime placeholder. **`channelsEnabled`** required for API-key auth on `--channels`. New `domain/plugin-distribution.md`.
-
-## v3.4 — what's new (2026-04-26)
-
-### Smart init + smart auto-compact (v3.6.3 + v3.7.0)
-
-- **Smart auto-compact** — `scripts/compact-filter.py` pipes `compact_summary` through a conservative filter before persisting to `last-compact.md`. Collapses fenced blocks > 40 lines, dense unprotected runs ≥ 30 lines, triplicate paragraphs. Never drops headings, paths, or `decision/error/fix` lines. Rotating history of last 5 checkpoints under `.claude/session/compact-history/`. Worst case: file unchanged (filter is a safety net, not aggressive compression).
-- **Smart init** — new `session-startup.sh` (SessionStart hook for all sources except `compact`) captures branch, HEAD, working-tree count, recent `.claude/` edits (24h), pending TODOs, behaviors disabled. Compares against the last snapshot to surface drift. Writes `last-startup.md` plus rotating `startup-history/<ISO>.md` (last 5). Injects a brief into context only when something is noteworthy.
-- **Setup hook validation** — new `pre-session-check.sh` wired in `Setup` (matchers `init`, `maintenance`). Validates `settings.json` JSON, `block-destructive.sh` executable, `behaviors/index.yaml` YAML, all wired hooks present + executable. Exit 2 blocks session start. Closes the gap between Setup being documented and never wired.
-
-### Audit hardening (v3.6.1 → v3.6.2)
-
-- **`search-first` behavior disabled** — flag-consume design generated false positives in sessions with prior context (counter reached `soft_block` and was disabled mid-session). Re-enable when sticky-flag mode lands.
-- **Permission rule split** — `domain/permission-model.md` (112 → 59 lines) + new `domain/permission-managed-settings.md` (60 lines, distinct globs). Loads only when applicable.
-- **Inbox signal gate** — `detect-claude-changes.sh` now skips auto-stub captures when total < 15 files and no structural change (agents/commands/skills = 0).
-- **Honest validation rate** — `not-applicable` renamed to `informational`. Practices that don't target a specific error are excluded from the validation rate calc, instead of inflating it as "validated".
-- **Registry shadow clarified** — `projects.yml` is now explicitly an example/reference file; runtime source of truth is `projects.local.yml` (gitignored).
-- **`parallel-sessions.md` split** (81 → 38 lines) — generic CLI flags moved to new `domain/cli-flags.md`.
-
-### Sync from Claude Code v2.1.120-128 (v3.5.0 → v3.6.0)
-
-- **`Setup` event** added to dotforge's catalogue (32+ hook events). Fires for `--init-only` / `--maintenance` runs with matchers `init` and `maintenance`.
-- **`PostToolUse.updatedToolOutput`** generalized from MCP-only to all tools (v2.1.121+). Documented design tradeoff: rewriting tool output can hide errors and breaks audit trails — prefer `additionalContext` for augmentation.
-- **5 managed-only enterprise fields** documented: `allowManagedPermissionRulesOnly`, `network.allowManagedDomainsOnly`, `filesystem.allowManagedReadPathsOnly`, `strictKnownMarketplaces`, `blockedMarketplaces`.
-- **`alwaysLoad: true`** per-MCP-server option (v2.1.121+) — tools skip tool-search deferral and stay always available.
-- **`workspace`** reserved as MCP server name (v2.1.128+).
-- **`disable-model-invocation`** frontmatter field (v2.1.111+) for skills.
-- **`${CLAUDE_EFFORT}`** runtime placeholder in skill content (v2.1.120+).
-- **`channelsEnabled`** required for API-key auth on `--channels` (v2.1.128+).
-- **Plugin distribution** — new `domain/plugin-distribution.md` covers `${CLAUDE_PLUGIN_DATA}`, multi-seed `CLAUDE_CODE_PLUGIN_SEED_DIR`, marketplace governance, `claude plugin prune`.
-
-### Trading stack (v3.4.1)
-
-- New `stacks/trading/rules/backtesting-adr-gate.md` — PSR/DSR gate rule for ADR baseline declarations (Bailey & López de Prado 2012, 2014).
-
-## v3.4 — what's new (2026-04-26)
-
-- **Hook event catalogue** updated to **33+** — `UserPromptExpansion` (slash-command expansion, blockable) and `PostToolBatch` (end-of-batch validation, blockable) added; documented `mcp_tool` as a fifth hook type with `${tool_input.*}` substitution (v2.1.118+); `PostToolUse`/`PostToolUseFailure` now carry `duration_ms` (v2.1.119+).
-- **Auto mode `"$defaults"` placeholder** (v2.1.118+) — extends `autoMode.allow|soft_deny|environment` instead of replacing them. Removes the all-or-nothing trade-off when shipping custom rules.
-- **Permission tightening** (v2.1.113+): `Bash(find:*)` allow rules no longer auto-approve `-exec`/`-delete`; deny rules now match `env`/`sudo`/`watch`/`ionice`/`setsid` wrappers; on macOS `/private/{etc,var,tmp,home}` are dangerous removal targets under `Bash(rm:*)`.
-- **Native macOS/Linux builds** (v2.1.117+) replace `Glob`/`Grep` tools with embedded `bfs`/`ugrep` via `Bash`. `Glob(...)`/`Grep(...)` permission specifiers and hook matchers are now platform-dependent — flagged in domain rules.
-- **TUI + idle-return recap**: `tui` setting + `/tui` toggle (v2.1.110+); `awaySummaryEnabled` + `/recap` (v2.1.108+, default-on for telemetry-disabled deployments since v2.1.110). Coexists with dotforge's `last-compact.md` — different problems (idle return vs compaction survival).
-- **Git attribution refresh**: `attribution.commit`/`attribution.pr` supersede the deprecated `includeCoAuthoredBy`; `prUrlTemplate` for self-hosted GitHub/GitLab/Bitbucket.
-- **CLI surface fully documented**: `--name`/`-n`, `--tools`/`--allowedTools`/`--disallowedTools`, `--system-prompt[-file]`/`--append-system-prompt[-file]`, `--strict-mcp-config`, `--input-format`, `--include-partial-messages`, `--debug-file`, `--disable-slash-commands`, `--remote-control`/`--rc`, `--allow-dangerously-skip-permissions`, `--plugin-dir`, `--ide`, `--betas`, `--channels`. New CLI subcommands: `claude install`, `auth`, `agents`, `auto-mode`, `remote-control`, `setup-token`.
-- **Audit checklist item 14 fixed**: scoring v3 behavior coverage now requires ENFORCEMENT (compiled hook under `.claude/hooks/generated/` AND a `settings.json` reference), not just a `behaviors/index.yaml` declaration. Closes the false-positive that scored projects 1/1 with no runtime effect.
-- **`verify-before-done` regex extended**: now matches `bash tests/*.sh`, `bash <path>/test-*.sh`, `./tests/*.sh` patterns. Fixes legitimate `git push` from dotforge being soft-blocked after `bash tests/test-*.sh` runs.
-
-## v3.3.1 — Session-report JSON bug (2026-04-21)
-
-5-month silent bug: `session-report.sh` corrupted every metrics JSON across all 12 registered projects. Root cause: `grep -c ... || echo "0"` idiom that emitted `"0\n0"` on no-match, plus a cascade where the corrupted previous file made arithmetic fail on the next write. Fixed in 9 projects, 54 corrupt JSON files deleted.
+See [docs/changelog.md](docs/changelog.md) for the complete history (v0.1.0 → v3.13.0) including v3.10.0 (sync v2.1.144-v2.1.152), v3.9.1 (upstream security fixes), v3.9.0 (sync v2.1.141-143), v3.8.x (auth model + docs domain migration), v3.7.x (smart init + evidence-based compaction), v3.6.x (audit hardening), v3.5.0–v3.4.0 (sync v2.1.120-128), and earlier.
 
 ## v3.0 — behavior governance layer
 
@@ -241,9 +192,9 @@ Multi-stack projects get all matching stack configs merged automatically.
 ```
 dotforge/
 ├── template/       # Base scaffold (CLAUDE.md.tmpl, settings, hooks, rules, commands)
-├── stacks/         # Technology modules (16 stacks, additive)
+├── stacks/         # Technology modules (18 stacks, additive)
 ├── agents/         # 7 subagents (researcher, architect, implementer, ...)
-├── skills/         # 18 skills installed as ~/.claude/skills/ symlinks
+├── skills/         # 21 skills installed as ~/.claude/skills/ symlinks
 ├── mcp/            # MCP server templates (github, postgres, supabase, redis, slack)
 ├── behaviors/      # v3 declarative policies (index.yaml + one dir per behavior)
 ├── scripts/        # v3 runtime, compiler, and /forge behavior CLI
@@ -333,8 +284,8 @@ Orchestration follows a decision tree: researcher → architect → implementer 
 
 `/forge audit` scores your project's Claude Code configuration on a 10-point scale:
 
-- **5 obligatory items** (scored 0-2): settings.json, block-destructive hook, CLAUDE.md, rules, deny list
-- **8 recommended items** (scored 0-1): lint hook, commands, error log, agents, manifest, global hook, prompt injection scan, auto-mode safety
+- **5 obligatory items** (scored 0-2): CLAUDE.md, settings.json, rules with globs, block-destructive hook, build/test commands
+- **10 recommended items** (scored 0-1): CLAUDE_ERRORS.md, lint hook, custom commands, memory, agents + orchestration rule, .gitignore secrets, prompt injection scan, auto-mode safety, v3 behaviors enforcement, OS-level sandboxing
 - **Project tier**: simple/standard/complex adjusts scoring expectations
 - **Security cap**: missing settings.json or block-destructive hook caps score at 6.0
 
@@ -363,7 +314,7 @@ See [practices/README.md](practices/README.md) for the lifecycle and format.
 - [Anatomy of CLAUDE.md](docs/anatomy-claude-md.md) — Deep dive into project instructions
 - [Memory Strategy](docs/memory-strategy.md) — 5-layer memory policy for agents
 - [Troubleshooting](docs/troubleshooting.md) — Common problems and diagnostics
-- [Changelog](docs/changelog.md) — Version history (v0.1.0 → v3.1.1)
+- [Changelog](docs/changelog.md) — Version history (v0.1.0 → v3.13.0)
 - [Roadmap](ROADMAP.md) — Completed features + upcoming
 
 ## Requirements
@@ -476,7 +427,7 @@ $DOTFORGE_DIR/global/sync.sh
 1. **Registry cross-proyecto con historial de auditoría** — seguí scores en todos tus proyectos, detectá regresiones, compará configuraciones
 2. **Pipeline de prácticas** — ciclo de mejora continua: `inbox/ → evaluating/ → active/ → deprecated/`. Los descubrimientos se propagan entre proyectos
 3. **Template sync con preservación de customizaciones** — markers `<!-- forge:section -->` permiten que `/forge sync` actualice sin tocar lo tuyo
-4. **Audit scoring con security cap** — checklist de 13 ítems normalizado a 10. Faltar seguridad esencial capea el score a 6.0
+4. **Audit scoring con security cap** — checklist de 15 ítems normalizado a 10. Faltar seguridad esencial capea el score a 6.0
 
 Otras herramientas bootstrapean una vez. dotforge bootstrapea, audita, sincroniza y evoluciona.
 
@@ -508,11 +459,13 @@ Los proyectos multi-stack reciben todas las configuraciones de stacks coincident
 ```
 dotforge/
 ├── template/       # Scaffold base (CLAUDE.md.tmpl, settings, hooks, rules, commands)
-├── stacks/         # Módulos tecnológicos (16 stacks, aditivos)
+├── stacks/         # Módulos tecnológicos (18 stacks, aditivos)
 ├── agents/         # 7 subagentes (researcher, architect, implementer, ...)
-├── skills/         # 18 skills instalados como symlinks en ~/.claude/skills/
+├── skills/         # 21 skills instalados como symlinks en ~/.claude/skills/
 ├── mcp/            # Templates de servidores MCP (github, postgres, supabase, redis, slack)
-├── audit/          # Checklist (13 ítems) + puntaje normalizado a 10
+├── audit/          # Checklist (15 ítems) + puntaje normalizado a 10
+├── behaviors/      # Políticas declarativas v3 (index.yaml + un dir por behavior)
+├── scripts/        # Runtime v3, compiler y CLI /forge behavior
 ├── practices/      # Pipeline: inbox → evaluating → active → deprecated
 ├── global/         # Gestión global de ~/.claude/ (CLAUDE.md, settings, sync.sh)
 ├── registry/       # Seguimiento de proyectos con puntajes e historial
@@ -596,8 +549,8 @@ La orquestación sigue un árbol de decisión: researcher → architect → impl
 
 `/forge audit` puntúa la configuración de Claude Code de tu proyecto en una escala de 10 puntos:
 
-- **5 ítems obligatorios** (puntaje 0-2): settings.json, hook de bloqueo destructivo, CLAUDE.md, rules, lista de denegación
-- **8 ítems recomendados** (puntaje 0-1): hook de lint, commands, registro de errores, agentes, manifiesto, hook global, scan de prompt injection, auto-mode safety
+- **5 ítems obligatorios** (puntaje 0-2): CLAUDE.md, settings.json, rules con globs, hook block-destructive, comandos build/test
+- **10 ítems recomendados** (puntaje 0-1): CLAUDE_ERRORS.md, hook de lint, commands custom, memoria, agentes + regla de orquestación, .gitignore protege secrets, scan de prompt injection, auto-mode safety, enforcement de behaviors v3, sandboxing OS-level
 - **Tier de proyecto**: simple/standard/complex ajusta expectations de scoring
 - **Tope de seguridad**: si falta settings.json o el hook de bloqueo destructivo, el puntaje máximo es 6.0
 
@@ -626,7 +579,7 @@ Ver [practices/README.md](practices/README.md) para el ciclo de vida y formato.
 - [Anatomy of CLAUDE.md](docs/anatomy-claude-md.md) — Análisis detallado de las instrucciones de proyecto
 - [Memory Strategy](docs/memory-strategy.md) — Política de memoria de 5 capas para agentes
 - [Troubleshooting](docs/troubleshooting.md) — Problemas comunes y diagnósticos
-- [Changelog](docs/changelog.md) — Historial de versiones (v0.1.0 → v3.1.1)
+- [Changelog](docs/changelog.md) — Historial de versiones (v0.1.0 → v3.13.0)
 - [Roadmap](ROADMAP.md) — Features completadas + próximas
 
 ## Requisitos

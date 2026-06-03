@@ -1,10 +1,67 @@
 # Roadmap dotforge
 
-Estado actual: **v3.9.0** (2026-05-22) — Sync con Claude Code v2.1.141-143 (Stop hook 8-block cap, terminalSequence, claude agents launcher, worktree.bgIsolation, rewind+summarize partial, fast mode Opus 4.7 default, plugin dependency enforcement, plugin flat shape). Propagado a los 12 proyectos. 11 GitHub releases publicados (v3.4.1 → v3.9.0).
+Estado actual: **v3.13.0** (2026-06-03) — Workflow security boundary clarification (workflow subagents bypass session permission mode) + ultracode runtime layer (`/effort ultracode` activator + `/deep-research` bundled workflow) + sync v2.1.158→v2.1.161 (acceptEdits security prompts, keyword rename `workflow`→`ultracode`, PostToolBatch failure isolation, Mantle as 4th enterprise provider).
 
 ---
 
 ## Completado
+
+### v3.13.0 — Workflow security boundary + ultracode runtime + v2.1.158-161 sync (2026-06-03)
+
+`/forge update` procesa 6 prácticas del watch upstream 2026-06-03. 1 breaking-ish, 4 medium, 1 low-priority bundle.
+
+#### Security boundary clarification
+- **Workflow subagents siempre corren en `acceptEdits`** regardless of session permission mode (incluye `plan`). File edits auto-aprobados. `permissions.deny` es el único backstop kernel-level. Documentado en `domain/workflow-automation.md` + `domain/workflow-and-ultracode-policy.md` + `domain/permission-model.md`.
+- **v2.1.160 acceptEdits prompts** — shell rc files always prompt; build-tool config (`.npmrc`/`.yarnrc*`/`bunfig.toml`/`.bazelrc`/`.pre-commit-config.yaml`/`.devcontainer/`) prompts en `acceptEdits`. Defense-in-depth con `sandbox.filesystem.denyWrite`.
+
+#### Ultracode runtime layer
+- **`/effort ultracode`** activator runtime: xhigh + auto-workflow orchestration por substantive task. Session-only.
+- **`/deep-research`** bundled workflow documentado.
+- **`session-startup.sh`** tier brief actionable: production → "Activate now: /effort ultracode".
+
+#### Behavior changes
+- v2.1.160 trigger keyword `workflow` → `ultracode` (setting key unchanged).
+- v2.1.161 PostToolBatch failure isolation — failed Bash no longer cancels other parallel calls.
+
+#### Small additions bundle
+Mantle como 4to enterprise provider · `CLAUDE_CODE_ENABLE_AUTO_MODE=1` opt-in v2.1.158 · `claude mcp ${VAR}` no expandido (security fix v2.1.161) · grep single-file satisface read-before-edit · OTEL metric labels + tool_parameters · `claude agents` muestra done/total.
+
+### v3.12.1 — Housekeeping completar /forge update 2026-06-01 (2026-06-02)
+
+Trae a `main` los archivos del `/forge update` del 2026-06-01 que habían quedado sin commitear. Sin features nuevos.
+
+### v3.12.0 — Workflow + Ultracode policy con defaults por tier (2026-06-02)
+
+#### Conceptos canónicos
+- **Workflow = TOOL** (orquestación multi-agente, v2.1.154+). Por tarea.
+- **Ultracode = MODE** (adversarial verify + workflow-first + plan-mode + structured output). Por proyecto, vía tier en registry.
+
+#### Nuevas piezas
+- **`domain/workflow-and-ultracode-policy.md`** (nueva, 65 líneas) — política canónica con 5 criterios (C1 Blast radius, C2 Domain risk, C3 Ambiguity, C4 Reversibility, C5 Prior failure), 4 tiers, portfolio table para 12 proyectos.
+- **`/forge ultracode-check`** (slash command) — lee tier + git state + last-startup, aplica 5 criterios, output "ON | CONSIDER | OFF".
+- **`session-startup.sh`** — agrega bloque `Ultracode tier: <tier> — <hint>`.
+
+Diseñado con Workflow tool (4 fases, 9 agentes, adversarial verify) — verify atrapó 4 issues críticos + 2 mejoras de clasificación.
+
+### v3.11.0 — /workflows TODO resuelto + 4 más (2026-06-01)
+
+`/forge update` desde watch 2026-06-01. 5 inbox → active, 1 deferred.
+
+- **`domain/workflow-automation.md`** — TODO de `/workflows` resuelto. Coverage completa v2.1.154+: declarative `meta`, 5 primitivas (`agent`/`parallel`/`pipeline`/`phase`/`log`), schema validation, concurrency, budget, resume.
+- **Worktree lifecycle** — auto-unlock on agent finish, `EnterWorktree` mid-session switch. `sync-all-repos/SKILL.md` extendido con detección.
+- **`StopFailure` matchers** documentados (`rate_limit`/`authentication_failed`/`billing_error`/`server_error`). `template/hooks/session-report.sh` extendido.
+- **Agent frontmatter hooks** documentados arquitecturalmente en `domain/agent-orchestration.md`.
+- **Settings hardening bundle** — `claudeMd` inline managed key, ConfigChange matchers, PowerShell `if:` pattern fix, settings.json parsing resilience.
+
+### v3.10.1 — `/forge sync-all` skill (2026-06-01)
+
+Nuevo skill `sync-all-repos` — descubre cada repo GitHub-backed en la máquina, clasifica (parallel + timeout), auto-ejecuta pull/push/rebase para casos obvios, delega dirty/non-main a Claude. Maneja: macOS Finder duplicates (`* 2.*`), worktree submodule traps, stale lock files.
+
+Diseñado para workflow Mac↔VPS sin coordinación directa. `.dotforge-sync-ignore` como opt-out marker.
+
+### v3.10.0 — Sync from Claude Code v2.1.144→v2.1.152 (2026-05-27)
+
+### v3.9.1 — Upstream security fixes propagated (v2.1.145→v2.1.149) (2026-05-27)
 
 ### v3.9.0 — Sync from Claude Code v2.1.141-143 (2026-05-22)
 

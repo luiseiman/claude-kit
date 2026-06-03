@@ -23,7 +23,16 @@ if [[ ! -x "$SCRIPT" ]]; then
   exit 0
 fi
 
-# Run with a short timeout to never block session start
-timeout 5 "$SCRIPT" 2>&1 | head -3 1>&2 || true
+# Run with a short timeout to never block session start.
+# Portable: prefer gtimeout (macOS+coreutils) then timeout (Linux), else run unbounded.
+if command -v gtimeout >/dev/null 2>&1; then
+  gtimeout 5 "$SCRIPT" 2>&1 | head -3 1>&2 || true
+elif command -v timeout >/dev/null 2>&1; then
+  timeout 5 "$SCRIPT" 2>&1 | head -3 1>&2 || true
+else
+  # No timeout binary (macOS without coreutils). Script has internal early-exits
+  # and bounded work (file size). Run unbounded; suppress errors to never block.
+  "$SCRIPT" 2>&1 | head -3 1>&2 || true
+fi
 
 exit 0

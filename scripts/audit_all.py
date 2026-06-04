@@ -4,7 +4,7 @@
 Deterministic, script-based alternative to running the /audit-project skill 12 times.
 Two-dimension model (v4.x):
   - Native Health (score, 0-10): 5 obligatory + 10 recommended native-usage items.
-  - dotforge Adoption (forge_adoption, 0-5): informational, does not affect score.
+  - dotforge Adoption (forge_adoption, 0-4): informational, does not affect score.
 
 Usage: python3 scripts/audit_all.py [--dry-run]
 """
@@ -313,18 +313,13 @@ def audit(proj_path: Path, name: str, version: str, prev_version) -> dict:
     r["adoption"]["B2_workflows"] = 1 if any(
         "export const meta" in read_text(f, 5000) for f in wf_files) else 0
 
-    # B3: override capture loop
-    override_log = proj_path / ".forge/audit/overrides.log"
-    wired_override = bool(s and "session-start-process-overrides.sh" in json.dumps(s))
-    r["adoption"]["B3_override_loop"] = 1 if (override_log.exists() and wired_override) else 0
-
-    # B4: domain rules
+    # B3: domain rules
     domain_dir = rules_dir / "domain"
     domain_rules = list(domain_dir.glob("*.md")) if domain_dir.exists() else []
-    r["adoption"]["B4_domain_rules"] = 1 if domain_rules else 0
+    r["adoption"]["B3_domain_rules"] = 1 if domain_rules else 0
 
-    # B5: sync recency — project version matches current dotforge VERSION
-    r["adoption"]["B5_sync_recency"] = 1 if (prev_version and str(prev_version) == version) else 0
+    # B4: sync recency — project version matches current dotforge VERSION
+    r["adoption"]["B4_sync_recency"] = 1 if (prev_version and str(prev_version) == version) else 0
 
     # ── Score calculation ──
     mand = sum(r["items"][k] for k in (
@@ -340,7 +335,7 @@ def audit(proj_path: Path, name: str, version: str, prev_version) -> dict:
         label = "None"
     elif adoption <= 2:
         label = "Partial"
-    elif adoption <= 4:
+    elif adoption == 3:
         label = "Most"
     else:
         label = "Full"
@@ -381,7 +376,7 @@ def main() -> int:
         prev = r.get("prev_score") or 0
         delta = r["score"] - prev
         delta_s = f"{delta:+.2f}" if prev else "  new"
-        adopt = f"{r['forge_adoption']}/5 {r['adoption_label'][:4]}"
+        adopt = f"{r['forge_adoption']}/4 {r['adoption_label'][:4]}"
         notes = ", ".join(r["notes"][:2]) if r["notes"] else ""
         print(
             f"{r['name']:<20} {r['mand']:>3}/10 {r['rec']:>3}/10 "

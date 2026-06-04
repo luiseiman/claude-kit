@@ -17,7 +17,6 @@ set -u
 FORGE_ROOT="${FORGE_ROOT:-.forge}"
 FORGE_STATE_FILE="${FORGE_ROOT}/runtime/state.json"
 FORGE_LOCK_DIR="${FORGE_ROOT}/runtime/state.lock"
-FORGE_AUDIT_LOG="${FORGE_ROOT}/audit/overrides.log"
 FORGE_LOCK_TIMEOUT="${FORGE_LOCK_TIMEOUT:-2}"
 FORGE_SESSION_TTL_SECONDS="${FORGE_SESSION_TTL_SECONDS:-86400}"
 FORGE_EMPTY_STATE='{"schema_version":"1","sessions":{}}'
@@ -67,15 +66,12 @@ _forge_require_jq() {
 # Returns 0 on success, 1 if jq is missing.
 forge_init() {
     _forge_require_jq || return 1
-    mkdir -p "${FORGE_ROOT}/runtime" "${FORGE_ROOT}/audit" 2>/dev/null || {
+    mkdir -p "${FORGE_ROOT}/runtime" 2>/dev/null || {
         _forge_log "cannot create ${FORGE_ROOT}/ — disk full or permission denied"
         return 1
     }
     if [ ! -f "$FORGE_STATE_FILE" ]; then
         printf '%s\n' "$FORGE_EMPTY_STATE" > "$FORGE_STATE_FILE"
-    fi
-    if [ ! -f "$FORGE_AUDIT_LOG" ]; then
-        : > "$FORGE_AUDIT_LOG"
     fi
     return 0
 }
@@ -591,11 +587,6 @@ forge_pending_block_try_override() {
     printf '%s' "$mutated" | _forge_state_write
     forge_lock_release
     trap - EXIT INT TERM
-
-    # Append to permanent audit log
-    printf '%s|%s|%s|%s|%s|%s|%s\n' \
-        "$now_iso" "$sid" "$bid" "$tool" "$summary" "$counter_at" "" \
-        >> "$FORGE_AUDIT_LOG"
     return 0
 }
 
@@ -611,35 +602,6 @@ _forge_iso_to_epoch() {
         return 0
     fi
     printf '0'
-}
-
-# ---------------------------------------------------------------------------
-# Override audit (triple-write: state.json + overrides.log)
-# ---------------------------------------------------------------------------
-
-# forge_override_append — record a soft_block override.
-# Args: session_id behavior_id tool_name tool_input_summary counter reason
-forge_override_append() {
-    local sid="$1" bid="$2" tool="$3" summary="$4" counter="$5" reason="${6:-}"
-    local now
-    now=$(_forge_now_iso8601)
-    local filter='
-        .sessions[$sid].behaviors[$bid].overrides += [{
-            "timestamp": $now,
-            "tool_name": $tool,
-            "tool_input_summary": $summary,
-            "counter_at_override": ($counter | tonumber),
-            "reason": $reason
-        }]
-    '
-    _forge_run_mutation "$filter" \
-        --arg sid "$sid" --arg bid "$bid" --arg now "$now" \
-        --arg tool "$tool" --arg summary "$summary" \
-        --arg counter "$counter" --arg reason "$reason" || return 1
-    # Append to permanent audit log (pipe-delimited).
-    printf '%s|%s|%s|%s|%s|%s|%s\n' \
-        "$now" "$sid" "$bid" "$tool" "$summary" "$counter" "$reason" \
-        >> "$FORGE_AUDIT_LOG"
 }
 
 # ---------------------------------------------------------------------------

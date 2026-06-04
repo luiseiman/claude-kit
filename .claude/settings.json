@@ -49,11 +49,6 @@
           {
             "type": "command",
             "command": ".claude/hooks/session-startup.sh"
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/session-start-process-overrides.sh",
-            "timeout": 5
           }
         ]
       }

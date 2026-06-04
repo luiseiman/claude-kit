@@ -11,7 +11,7 @@
 [![Version](https://img.shields.io/badge/version-4.0.0-blue)](VERSION)
 [![Last commit](https://img.shields.io/github/last-commit/luiseiman/dotforge)](https://github.com/luiseiman/dotforge/commits/main)
 
-**Behavior governance for [Claude Code](https://docs.anthropic.com/en/docs/claude-code).** Declare runtime policies on tool calls — "search before writing", "no destructive git", "verify before shipping" — and enforce them via compiled `PreToolUse` hooks that share a session-scoped state file. Escalates silently → nudge → warning → soft_block → hard_block, with a permanent override audit trail.
+**Behavior governance for [Claude Code](https://docs.anthropic.com/en/docs/claude-code).** Declare runtime policies on tool calls — "search before writing", "no destructive git", "verify before shipping" — and enforce them via compiled `PreToolUse` hooks that share a session-scoped state file. Escalates silently → nudge → warning → soft_block → hard_block.
 
 ```
 behaviors/no-destructive-git/behavior.yaml  # declarative policy
@@ -19,7 +19,6 @@ behaviors/no-destructive-git/behavior.yaml  # declarative policy
 .claude/hooks/generated/*.sh                # runtime enforcement
   ↓ (observe)
 .forge/runtime/state.json                   # counters, flags, per-session
-.forge/audit/overrides.log                  # override audit (git-tracked)
 ```
 
 Other tools stop at configuration. dotforge governs behavior — and keeps auditing, syncing, and evolving your `.claude/` setup across every repo you manage.
@@ -34,12 +33,11 @@ For people and teams managing more than one Claude Code project.
 
 ## v4.0 — what's new (2026-06-03)
 
-### Override capture loop closes practices↔behaviors (v4.0.0)
+### Audit two-dimension model + override loop retired (v4.0.x)
 
-- **`scripts/process-override-log.sh`** — bash script that processes `.forge/audit/overrides.log` and auto-creates `practices/inbox/auto-override-*.md` for behaviors overridden ≥3 times in 30 days. Idempotent. 10/10 tests green. Cost: 0 LLM calls, pure bash.
-- **`session-start-process-overrides.sh`** wired in `SessionStart` (template + self-hosting) — auto-captures frequent overrides as practices on every session start.
+- **Override capture loop — shipped in v4.0.0, retired after validation.** A portfolio scan found **0 overrides across all 12 projects in ~7 weeks** (production included; only 4/12 adopted behaviors at all). The auditable override trail + capture loop (`process-override-log.sh`, `overrides.log`, SessionStart wiring) were removed as dead weight. The graduated escalation engine (soft_block) — which IS exercised; the happy path is "verify", not "override" — stays. See [`.claude/rules/domain/native-vs-dotforge-boundary.md`](.claude/rules/domain/native-vs-dotforge-boundary.md).
 - **`scripts/migrate-v3-to-v4.sh`** — safe migration script with mandatory `--dry-run`, atomic backup, `--rollback`. See [`docs/v4/MIGRATION-V3-TO-V4.md`](docs/v4/MIGRATION-V3-TO-V4.md).
-- **Audit two-dimension model** — **Native Health** (0-10: native Claude Code usage + security) + **dotforge Adoption** (0-5: informational, does not affect the score). Behaviors / workflows / override-loop moved to the non-penalizing Adoption dimension — native-first projects no longer lose points for skipping dotforge machinery. New Native-Health items: auto-memory hygiene, permission cascade, attribution.
+- **Audit two-dimension model** — **Native Health** (0-10: native Claude Code usage + security) + **dotforge Adoption** (0-4: informational, does not affect the score). Behaviors / workflows moved to the non-penalizing Adoption dimension — native-first projects no longer lose points for skipping dotforge machinery. New Native-Health items: auto-memory hygiene, permission cascade, attribution.
 - **`domain/workflow-economics.md`** (new domain rule) — documents v4 PoC cost-quality findings. Decision matrix: when workflow vs skill. Token economy principles. **TL;DR: workflows are 4-25x more expensive than bash skills for recurring work — use only as on-demand escalation, not as default refactor.**
 - **`workflows/watch.js`** ships as REFERENCE implementation, NOT promoted to `/forge watch` default. The bash skill remains the production tool.
 
@@ -300,7 +298,7 @@ Orchestration follows a decision tree: researcher → architect → implementer 
 `/forge audit` scores your project's Claude Code configuration on a 10-point scale:
 
 - **5 obligatory items** (scored 0-2): CLAUDE.md, settings.json, rules with globs, block-destructive hook, build/test commands
-- **12 recommended items** (scored 0-1): CLAUDE_ERRORS.md, lint hook, custom commands, memory, agents + orchestration rule, .gitignore secrets, prompt injection scan, auto-mode safety, v3 behaviors enforcement, OS-level sandboxing, **v4 workflow availability**, **v4 override capture loop active**
+- **12 recommended items** (scored 0-1): CLAUDE_ERRORS.md, lint hook, custom commands, memory, agents + orchestration rule, .gitignore secrets, prompt injection scan, auto-mode safety, v3 behaviors enforcement, OS-level sandboxing, **v4 workflow availability**, domain rules
 - **Project tier**: simple/standard/complex adjusts scoring expectations
 - **Security cap**: missing settings.json or block-destructive hook caps score at 6.0
 

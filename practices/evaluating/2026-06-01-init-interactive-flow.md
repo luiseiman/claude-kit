@@ -5,7 +5,7 @@ source: "watch upstream — code.claude.com/docs/en/memory"
 source_type: docs
 discovered: 2026-06-01
 status: evaluating
-tags: [init, ux, forge-init, subagent, bootstrap]
+tags: [init, ux, forge-init, subagent, bootstrap, needs-empirical-test]
 tested_in: null
 incorporated_in: []
 replaced_by: null

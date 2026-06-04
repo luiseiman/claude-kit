@@ -1240,3 +1240,25 @@ practices:
     status: informational
     projects_applied: 0
     last_checked: null
+
+# evaluating cleanup 2026-06-17
+  - id: practice-2026-03-20-trading-stack
+    error_targeted: null
+    error_type: null
+    activated: 2026-06-04
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: validated
+    projects_applied: 1
+    last_checked: null
+  - id: practice-2026-06-01-workflows-fifth-primitive
+    error_targeted: null
+    error_type: null
+    activated: 2026-06-04
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: informational
+    projects_applied: 1
+    last_checked: null

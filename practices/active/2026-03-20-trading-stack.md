@@ -3,13 +3,14 @@ id: practice-2026-03-20-trading-stack
 title: "trading stack — domain-specific stack for trading projects"
 source_type: project-observation
 source: dotforge (stacks/trading/)
-status: evaluating
+status: active
+effectiveness: validated
 evaluated_date: 2026-03-20
 evaluation_notes: "Clean structure, convention-compliant. Add category:domain to plugin.json. Test in a real trading project before promoting to active."
 tags: [stacks, trading, domain-specific, skills]
 date: 2026-03-20
 tested_in: [dotforge]
-incorporated_in: []
+incorporated_in: [stacks/trading/]
 ---
 
 ## Observation

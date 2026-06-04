@@ -4,10 +4,11 @@ title: /workflows — 5th workflow automation primitive (v2.1.154)
 source: "official changelog"
 source_type: upstream
 discovered: 2026-06-01
-status: evaluating
+status: active
+effectiveness: informational
 tags: [workflow-automation, agents, orchestration, primitives, upstream]
 tested_in: null
-incorporated_in: [".claude/rules/domain/workflow-automation.md (stub — full coverage pending official docs)"]
+incorporated_in: ['3.12.1 (via 2026-06-01-workflows-v2154-full-coverage)']
 replaced_by: null
 ---
 

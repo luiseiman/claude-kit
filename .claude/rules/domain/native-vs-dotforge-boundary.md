@@ -26,9 +26,17 @@ KEEP — no native equivalent:
 - **Domain rules** — curated encyclopedia of CC internals + business domain. Core asset.
 - **Cross-project propagation with merge** — `forge:section` markers + `/forge sync`.
   Native symlinks/global CLAUDE.md only COPY, never merge per-project customization.
-- **Behaviors v3** — 5-level escalation + session state + auditable override.
-  `hookify` is a binary warn/block wrapper; no native behavior-governance spec exists.
-  KEEP pending validation that production projects actually consult `overrides.log`.
+- **Behaviors v3 — SPLIT verdict (validated 2026-06-04).** Portfolio scan: 0 overrides
+  across all 12 projects over ~7 weeks (behaviors live since v3.0, 2026-04-13), including
+  production (TRADINGBOT, cotiza). Only 4/12 adopted behaviors at all.
+  - KEEP the **graduated escalation engine** (silent→nudge→warning→soft_block). It is
+    exercised and works — the happy path is "verify", not "override" (observed live:
+    `verify-before-done` soft_blocked a push, resolved by running tests). `hookify` is
+    only binary warn/block; the graduated escalation is a real, used delta.
+  - RETIRE/SIMPLIFY the **auditable override trail** — the v3-vs-hookify differential is
+    empirically refuted (0 uses). The v4 override-capture loop (`process-override-log.sh`,
+    audit item B3, SessionStart wiring) processes a log that is always empty: machinery
+    for an event that does not occur. Dead weight, not delta.
 - **Registry + audit cross-project** — REORIENT: audit must measure good use of NATIVE
   features (auto-memory active, sandbox set, deny rules present, /init run), not presence
   of dotforge machinery.

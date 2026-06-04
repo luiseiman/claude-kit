@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Override reinvocation: escalate to soft_block, then the exact same tool_input
 # comes back → detected as override, passes silently, records audit in three
-# places (state.overrides, .forge/audit/overrides.log, pending_block cleared).
+# places (state.overrides, pending_block cleared).
 set -u
 . "$(dirname "$0")/_scenario_helpers.sh"
 trap scenario_cleanup EXIT
@@ -47,10 +47,6 @@ assert_eq "1" "$ov_count" "state.overrides has one entry" || exit 1
 ov_counter=$(jq -r --arg sid "$SCENARIO_SESSION_ID" \
     '.sessions[$sid].behaviors["search-first"].overrides[0].counter_at_override' "$FORGE_STATE_FILE")
 assert_eq "5" "$ov_counter" "override captured counter=5" || exit 1
-
-# .forge/audit/overrides.log has 1 line
-audit_lines=$(wc -l < "${FORGE_ROOT}/audit/overrides.log" | tr -d ' ')
-assert_eq "1" "$audit_lines" "audit log has one override entry" || exit 1
 
 # pending_block cleared
 pending_after=$(jq -r --arg sid "$SCENARIO_SESSION_ID" \

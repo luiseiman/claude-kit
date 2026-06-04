@@ -48,10 +48,6 @@ ov_count=$(jq -r --arg sid "$SID" --arg bid "$BID" \
     "$FORGE_STATE_FILE")
 assert_eq "1" "$ov_count" "override recorded in state" || exit 1
 
-# audit log line present
-audit_lines=$(wc -l < "$FORGE_AUDIT_LOG" | tr -d ' ')
-assert_eq "1" "$audit_lines" "override recorded in audit log" || exit 1
-
 # --- try_override with no pending_block → returns 1, no changes ---
 if forge_pending_block_try_override "$SID" "$BID" "Write" "$h1" "summary"; then
     printf 'FAIL: try_override should have returned 1 with no pending_block\n' >&2

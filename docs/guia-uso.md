@@ -343,7 +343,7 @@ Cada stack aporta:
 ### Dos dimensiones
 
 - **A — Salud Nativa** (0-10): buen uso de Claude Code nativo + seguridad. El score principal.
-- **B — Adopción dotforge** (0-5): cuánta gobernanza dotforge adoptó el proyecto. **Informativo — no afecta la Salud Nativa.** Un proyecto native-first con B=0 y A=10 es un resultado deseable.
+- **B — Adopción dotforge** (0-4): cuánta gobernanza dotforge adoptó el proyecto. **Informativo — no afecta la Salud Nativa.** Un proyecto native-first con B=0 y A=10 es un resultado deseable.
 
 ### Dimensión A — Salud Nativa (15 items)
 
@@ -372,21 +372,20 @@ Cada stack aporta:
 | 14 | Comandos custom | Al menos 1 comando relevante |
 | 15 | Agentes | Instalados + regla de orquestación activa |
 
-### Dimensión B — Adopción dotforge (5 items, informativo)
+### Dimensión B — Adopción dotforge (4 items, informativo)
 
 | # | Item | Criterio |
 |---|------|----------|
 | B1 | Behaviors v3 compilados | Hook compilado en `.claude/hooks/generated/` Y wired en settings.json |
 | B2 | Workflow availability | `workflows/` con al menos un `.js` con `export const meta` |
-| B3 | Override capture loop | `.forge/audit/overrides.log` + `session-start-process-overrides.sh` wired en SessionStart |
-| B4 | Domain rules | Al menos un rule en `.claude/rules/domain/` (frescura evaluada semánticamente) |
-| B5 | Sync recency | `dotforge_version` del proyecto == `VERSION` actual |
+| B3 | Domain rules | Al menos un rule en `.claude/rules/domain/` (frescura evaluada semánticamente) |
+| B4 | Sync recency | `dotforge_version` del proyecto == `VERSION` actual |
 
 ### Fórmula de scoring
 
 ```
 native_health = obligatorio × 0.7 + recomendado × 0.3     # 0-10, score principal
-forge_adoption = sum(B1..B5)                              # 0-5, informativo
+forge_adoption = sum(B1..B4)                              # 0-4, informativo
 ```
 
 - Obligatorios perfectos sin recomendados = **7.0** (Bueno)

@@ -80,12 +80,11 @@ For each checklist item, verify existence **and quality**:
 - `simple`: items 14-15 score 0 don't penalize (treated as N/A)
 - `complex`: items 14-15 become semi-obligatory (each 0-2 instead of 0-1)
 
-### Dimension B — dotforge Adoption (informational, 0-5, does NOT affect native_health)
+### Dimension B — dotforge Adoption (informational, 0-4, does NOT affect native_health)
 - **B1. v3 behaviors compiled** — `.claude/hooks/generated/*.sh` exist AND referenced in settings.json?
 - **B2. Workflow availability (v4)** — `workflows/` with at least one `.js` containing `export const meta`?
-- **B3. Override capture loop (v4)** — `.forge/audit/overrides.log` exists AND `session-start-process-overrides.sh` wired in SessionStart?
-- **B4. Domain rules** — at least one rule in `.claude/rules/domain/` with `last_verified` <90 days? Report stale count.
-- **B5. Sync recency** — project `dotforge_version` == `$DOTFORGE_DIR/VERSION`?
+- **B3. Domain rules** — at least one rule in `.claude/rules/domain/` with `last_verified` <90 days? Report stale count.
+- **B4. Sync recency** — project `dotforge_version` == `$DOTFORGE_DIR/VERSION`?
 
 A project scoring B=0 (native-first) is a valid, non-penalized outcome. Never recommend adopting dotforge machinery just to raise B.
 
@@ -103,8 +102,8 @@ Use weights from `$DOTFORGE_DIR/audit/scoring.md`:
 **Security cap:** If item 2 (settings.json) or item 4 (block-destructive) is 0, `native_health` max = 6.0.
 
 **Dimension B — dotforge Adoption (informational):**
-6. `forge_adoption = sum(items B1-B5)` — 0 to 5. Does NOT enter native_health.
-7. Label: 0=None, 1-2=Partial, 3-4=Most, 5=Full.
+6. `forge_adoption = sum(items B1-B4)` — 0 to 4. Does NOT enter native_health.
+7. Label: 0=None, 1-2=Partial, 3=Most, 4=Full.
 
 ## Step 5: Generate report
 
@@ -116,7 +115,7 @@ Detected stack: {{stacks}}
 Tier: {{simple|standard|complex}}
 dotforge version: {{version from last bootstrap/sync if detectable}}
 Native Health: {{X.X}}/10 {{level}}
-dotforge Adoption: {{N}}/5 {{None|Partial|Most|Full}}  (informational — does not affect Native Health)
+dotforge Adoption: {{N}}/4 {{None|Partial|Most|Full}}  (informational — does not affect Native Health)
 
 ═ DIMENSION A — NATIVE HEALTH ═
 
@@ -142,9 +141,8 @@ dotforge Adoption: {{N}}/5 {{None|Partial|Most|Full}}  (informational — does n
 ═ DIMENSION B — DOTFORGE ADOPTION ═ (informational)
 {{✅|—}} B1 v3 behaviors compiled — {{detail: N generated hooks, settings reference yes/no}}
 {{✅|—}} B2 v4 workflow availability — {{detail: N .js workflows OR "none"}}
-{{✅|—}} B3 v4 override loop active — {{detail: hook wired yes/no, log exists yes/no}}
-{{✅|—}} B4 domain rules — {{detail: N rules, M stale >90d}}
-{{✅|—}} B5 sync recency — {{detail: project version vs current VERSION}}
+{{✅|—}} B3 domain rules — {{detail: N rules, M stale >90d}}
+{{✅|—}} B4 sync recency — {{detail: project version vs current VERSION}}
 
 ── DOMAIN KNOWLEDGE ──
 Role defined:     {{✓ if ## Role exists in CLAUDE.md with content | ✗ otherwise}}
@@ -194,7 +192,7 @@ This closes the Audit → Learning synergy: detected gaps feed back into the pra
 
 If `$DOTFORGE_DIR/registry/projects.yml` exists, update the project entry:
 - `score:` with `native_health` (the primary score — preserves trend continuity with prior audits)
-- `forge_adoption:` with the dimension-B value (0-5)
+- `forge_adoption:` with the dimension-B value (0-4)
 - `last_audit:` with the current date
 - `dotforge_version:` with the VERSION version if the project was bootstrapped
 - `last_sync:` preserve the existing value (do not modify here)

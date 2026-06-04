@@ -7,7 +7,7 @@
 # Two-dimension model (v4.x — see audit/checklist.md + audit/scoring.md):
 #   Dimension A — Native Health: 5 obligatory (0-2) + 10 recommended (0-1).
 #                 score = obl*0.7 + rec*0.3, security cap 6.0. The CI gate.
-#   Dimension B — dotforge Adoption: 5 items (0-1). Informational, 0-5.
+#   Dimension B — dotforge Adoption: 4 items (0-1). Informational, 0-4.
 #                 Does NOT affect Native Health.
 # Semantic checks (CLAUDE.md quality, rule content) are approximated with heuristics.
 # Score is indicative — /forge audit provides authoritative semantic evaluation.
@@ -44,8 +44,8 @@ cd "$PROJECT_DIR"
 s1=0; n1=""; s2=0; n2=""; s3=0; n3=""; s4=0; n4=""; s5=0; n5=""
 s6=0; n6=""; s7=0; n7=""; s8=0; n8=""; s9=0; n9=""; s10=0; n10=""
 s11=0; n11=""; s12=0; n12=""; s13=0; n13=""; s14=0; n14=""; s15=0; n15=""
-# --- Dimension B: scores (b1..b5) and notes (m1..m5) ---
-b1=0; m1=""; b2=0; m2=""; b3=0; m3=""; b4=0; m4=""; b5=0; m5=""
+# --- Dimension B: scores (b1..b4) and notes (m1..m4) ---
+b1=0; m1=""; b2=0; m2=""; b3=0; m3=""; b4=0; m4=""
 
 # ─────────────────────────────────────────────────────────────────────────────
 # DIMENSION A — OBLIGATORIO (each 0-2)
@@ -320,24 +320,16 @@ else
   b2=0; m2="No workflows/ with valid meta block"
 fi
 
-# B3. Override capture loop active (v4)
-if [[ -f ".forge/audit/overrides.log" ]] && [[ -f "$SETTINGS" ]] \
-   && grep -q "session-start-process-overrides.sh" "$SETTINGS" 2>/dev/null; then
-  b3=1; m3="overrides.log present and hook wired in SessionStart"
-else
-  b3=0; m3="Override loop not wired (log + SessionStart hook required)"
-fi
-
-# B4. Domain rules present
+# B3. Domain rules present
 DOM=$(ls .claude/rules/domain/*.md 2>/dev/null | wc -l | tr -d ' ')
 if [[ "${DOM:-0}" -gt 0 ]]; then
-  b4=1; m4="${DOM} domain rule(s) (freshness checked semantically by /forge audit)"
+  b3=1; m3="${DOM} domain rule(s) (freshness checked semantically by /forge audit)"
 else
-  b4=0; m4="No domain rules in .claude/rules/domain/"
+  b3=0; m3="No domain rules in .claude/rules/domain/"
 fi
 
-# B5. Sync recency — not mechanically determinable standalone (needs registry)
-b5=0; m5="Sync recency indeterminate standalone — resolved by /forge audit via registry"
+# B4. Sync recency — not mechanically determinable standalone (needs registry)
+b4=0; m4="Sync recency indeterminate standalone — resolved by /forge audit via registry"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Calculate scores
@@ -352,10 +344,10 @@ if [[ $s2 -eq 0 || $s4 -eq 0 ]]; then
   NATIVE_HEALTH=$(awk "BEGIN { v=${NATIVE_HEALTH}; printf \"%.2f\", (v > 6.0 ? 6.0 : v) }")
 fi
 
-FORGE_ADOPTION=$((b1 + b2 + b3 + b4 + b5))
+FORGE_ADOPTION=$((b1 + b2 + b3 + b4))
 if   [[ $FORGE_ADOPTION -eq 0 ]]; then ADOPTION_LABEL="None"
 elif [[ $FORGE_ADOPTION -le 2 ]]; then ADOPTION_LABEL="Partial"
-elif [[ $FORGE_ADOPTION -le 4 ]]; then ADOPTION_LABEL="Most"
+elif [[ $FORGE_ADOPTION -eq 3 ]]; then ADOPTION_LABEL="Most"
 else                                   ADOPTION_LABEL="Full"
 fi
 
@@ -409,9 +401,8 @@ data = {
   "adoption_items": {
     "B1_behaviors":        {"score": ${b1}, "note": "$(_san "$m1")"},
     "B2_workflows":        {"score": ${b2}, "note": "$(_san "$m2")"},
-    "B3_override_loop":    {"score": ${b3}, "note": "$(_san "$m3")"},
-    "B4_domain_rules":     {"score": ${b4}, "note": "$(_san "$m4")"},
-    "B5_sync_recency":     {"score": ${b5}, "note": "$(_san "$m5")"}
+    "B3_domain_rules":     {"score": ${b3}, "note": "$(_san "$m3")"},
+    "B4_sync_recency":     {"score": ${b4}, "note": "$(_san "$m4")"}
   }
 }
 print(json.dumps(data, indent=2))
@@ -421,7 +412,7 @@ else
   $SECURITY_CAP && CAP_NOTE="  ⚠ security cap applied (settings.json or block-destructive missing)"
   echo "═══ AUDIT SCORE: $(basename "$PROJECT_DIR") ═══"
   echo "Native Health: ${NATIVE_HEALTH}/10  (${LEVEL})${CAP_NOTE}"
-  echo "dotforge Adoption: ${FORGE_ADOPTION}/5  (${ADOPTION_LABEL})  [informational — does not affect Native Health]"
+  echo "dotforge Adoption: ${FORGE_ADOPTION}/4  (${ADOPTION_LABEL})  [informational — does not affect Native Health]"
   echo ""
   echo "═ DIMENSION A — NATIVE HEALTH ═"
   echo "── OBLIGATORIO (${SCORE_OBL}/10) ──"
@@ -446,9 +437,8 @@ else
   echo "═ DIMENSION B — DOTFORGE ADOPTION (informational) ═"
   printf "  [%s] B1. v3 behaviors         %s\n" "$b1" "$m1"
   printf "  [%s] B2. Workflow available   %s\n" "$b2" "$m2"
-  printf "  [%s] B3. Override loop        %s\n" "$b3" "$m3"
-  printf "  [%s] B4. Domain rules         %s\n" "$b4" "$m4"
-  printf "  [%s] B5. Sync recency         %s\n" "$b5" "$m5"
+  printf "  [%s] B3. Domain rules         %s\n" "$b3" "$m3"
+  printf "  [%s] B4. Sync recency         %s\n" "$b4" "$m4"
 fi
 
 # CI threshold gate (on Native Health)

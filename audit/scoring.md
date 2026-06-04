@@ -1,6 +1,6 @@
 # Scoring de Auditoría
 
-El audit produce **dos números independientes**: `native_health` (0-10, el score principal) y `forge_adoption` (0-5, informativo).
+El audit produce **dos números independientes**: `native_health` (0-10, el score principal) y `forge_adoption` (0-4, informativo).
 
 ## Dimensión A — Salud Nativa (score principal)
 
@@ -34,7 +34,7 @@ Si alguno de estos items es **0**, `native_health` tiene un cap máximo de **6.0
 ## Dimensión B — Adopción dotforge (informativo)
 
 ```
-forge_adoption = sum(items B1-B5)   # 0-5
+forge_adoption = sum(items B1-B4)   # 0-4
 ```
 
 **No entra en `native_health` ni lo modifica.** Es un indicador de cuánta gobernanza dotforge adoptó el proyecto.
@@ -43,8 +43,8 @@ forge_adoption = sum(items B1-B5)   # 0-5
 |----|-------|---------|
 | 0   | None    | Native-first puro. Válido y sin penalización. |
 | 1-2 | Partial | Adopción parcial de la maquinaria. |
-| 3-4 | Most    | Adopción amplia. |
-| 5   | Full    | Gobernanza dotforge completa. |
+| 3   | Most    | Adopción amplia. |
+| 4   | Full    | Gobernanza dotforge completa. |
 
 Un `forge_adoption: 0` con `native_health: 10` es un resultado **excelente y deseable** bajo el principio native-first (ver `.claude/rules/domain/native-vs-dotforge-boundary.md`). No recomendar adoptar maquinaria dotforge solo para subir B.
 

@@ -3,7 +3,7 @@
 El audit tiene **dos dimensiones independientes**:
 
 - **A — Salud Nativa** (score 0-10): ¿el proyecto usa bien Claude Code nativo + seguridad? Es el score que importa para cualquier proyecto, use o no la maquinaria dotforge.
-- **B — Adopción dotforge** (informativo 0-5): ¿cuánto adoptó la gobernanza dotforge? **NO penaliza** la Salud Nativa. Un proyecto native-first puro saca 0/5 acá sin perder un punto en A.
+- **B — Adopción dotforge** (informativo 0-4): ¿cuánto adoptó la gobernanza dotforge? **NO penaliza** la Salud Nativa. Un proyecto native-first puro saca 0/4 acá sin perder un punto en A.
 
 ---
 
@@ -100,9 +100,9 @@ El audit tiene **dos dimensiones independientes**:
 
 ---
 
-# Dimensión B — Adopción dotforge (informativo, 0-5)
+# Dimensión B — Adopción dotforge (informativo, 0-4)
 
-**No afecta el score de Salud Nativa.** Mide cuánto adoptó el proyecto la maquinaria de gobernanza dotforge. Reportar como `Adopción: N/5` con label (0=None, 1-2=Partial, 3-4=Most, 5=Full). Sirve para decidir propagación, no para juzgar calidad.
+**No afecta el score de Salud Nativa.** Mide cuánto adoptó el proyecto la maquinaria de gobernanza dotforge. Reportar como `Adopción: N/4` con label (0=None, 1-2=Partial, 3=Most, 4=Full). Sirve para decidir propagación, no para juzgar calidad.
 
 ### B1. Behaviors v3 compilados y wired
 - 0: Sin behaviors enforced — declaración en `behaviors/index.yaml` sola NO cuenta
@@ -116,19 +116,13 @@ El audit tiene **dos dimensiones independientes**:
 
 **Verificación:** `grep -q "export const meta" workflows/*.js`. Señal de gobernanza, no de calidad — los bash skills siguen siendo el workhorse. Ver `docs/v4/SPEC.md`.
 
-### B3. Override capture loop activo (v4)
-- 0: `.forge/audit/overrides.log` no rastreado O `session-start-process-overrides.sh` no wired
-- 1: Ambos presentes: log existe Y el hook está en `.claude/settings.json` SessionStart
-
-**Verificación:** `test -f .forge/audit/overrides.log && grep -q "session-start-process-overrides.sh" .claude/settings.json`. Solo significativo si hay behaviors activos. Ver `scripts/process-override-log.sh`.
-
-### B4. Domain rules
+### B3. Domain rules
 - 0: No hay `.claude/rules/domain/`
 - 1: Al menos un domain rule presente y fresco (`last_verified` <90 días)
 
 **Verificación:** Contar archivos en `.claude/rules/domain/`. Reportar cuántos están stale (>90 días). Si hay lógica de negocio pero no domain rules, sugerir `/forge domain extract`.
 
-### B5. Sync recency
+### B4. Sync recency
 - 0: `dotforge_version` del proyecto desfasado respecto a `VERSION` por ≥1 minor, o desconocido
 - 1: Proyecto sincronizado a la versión actual de dotforge (`dotforge_version` == `VERSION`)
 

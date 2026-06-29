@@ -97,6 +97,7 @@ dotforge implication: when defining hooks for very recent events (MessageDisplay
 - Async: `async: true` or stream `{"async":true}` as first JSON line
 - Tool hooks: 10min timeout. SessionEnd: 1.5s default. Override: `hook.timeout`
 - Matchers: Bash, Read, Write, Edit, Grep, Glob. Wildcard `*` supported
+- **Hyphenated matchers exact-match (BREAKING, v2.1.195)**: pre-fix, `matcher: "code-reviewer"` substring-matched (`code-reviewers`, `my-code-reviewer` also fired). Post-fix exact-match only. Audit dotforge agent matchers using hyphens (`code-reviewer`, `security-auditor`, `session-reviewer`, `test-runner`) and any hook keyed on `mcp__<server-with-hyphen>` matchers. Wildcards still cover the substring case explicitly: `matcher: "code-*"` matches `code-reviewer` + `code-reviewers`
 
 ## Stop hook convergence contract (v2.1.143+)
 

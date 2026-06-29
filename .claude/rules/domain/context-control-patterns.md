@@ -32,6 +32,11 @@ User-side interventions to keep the context window healthy. For runtime limits a
 - `/focus`: toggle focus view — last prompt + tool summary + final response only (v2.1.110+, replaces old Ctrl+O behavior)
 - `/compact <instructions>`: manual compaction with custom preservation hints
 - `Ctrl+X Ctrl+K`: kill all background agents (double-tap to confirm) — frees their context
+- **`/rewind` after `/clear` (v2.1.191+)**: previously `/clear` was irreversible — accidentally clearing a productive session meant rebuilding context from scratch. Post-fix, `/rewind` can resume the conversation from before `/clear` was run. Backstop for the "clear-button regret" pattern; does not extend to crashes/network drops.
+
+## Cache-preserving working-dir change
+
+- **`/cd <dir>` (v2.1.169+)**: moves the session's working directory without breaking the prompt cache. Pre-v2.1.169 the only way to change cwd was to start a new session (cold cache, full re-read of CLAUDE.md + rules). With `/cd` the system-prompt block stays cached and only the user-message portion sees the new cwd. Use for cross-project navigation in long-running sessions where /clear would lose useful context — e.g. drift-checking 12 projects sequentially without rebuilding the cache each time
 
 ## TUI rendering modes (v2.1.110+)
 

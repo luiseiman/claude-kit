@@ -16,6 +16,8 @@ OS-level isolation of bash subprocesses (macOS, Linux, WSL2 only — no Windows 
 - `autoAllowBashIfSandboxed` (default true): auto-approve bash when sandboxed, trading prompts for kernel enforcement
 - `excludedCommands`: run outside sandbox (e.g. `["docker *"]` when socket access is needed)
 - `allowUnsandboxedCommands: false`: disables `dangerouslyDisableSandbox` escape hatch entirely
+- `credentials` (v2.1.187+): block sandboxed commands from reading credential files (`~/.aws`, `~/.ssh`, `~/.kube`, `~/.netrc`, etc.) and secret env vars (`AWS_SECRET_*`, `*_TOKEN`, `*_API_KEY`, etc.). Defense-in-depth over `denyRead` patterns — enforced even when project rules forget specific paths. **Strongly recommended for production-tier projects** (TRADINGBOT, cotiza-api-cloud, InviSight) and any project with cloud creds in env/home.
+- `allowAppleEvents` (v2.1.181+, macOS only): opt-in to let sandboxed commands send Apple Events. Required for scripts that drive Finder/Safari/Mail/Automator. Default deny — leave off unless a project genuinely needs OS automation.
 
 ## Filesystem (kernel-enforced)
 

@@ -17,6 +17,7 @@ last_verified: 2026-05-27
 - FileChanged: fires on external file modification — use for auto-reload
 - InstructionsLoaded: fires when CLAUDE.md or `.claude/rules/*.md` loads. `load_reason`: `session_start` | `nested_traversal` | `path_glob_match` | `include` | `compact`. Observability-only, no decision control.
 - Setup: fires for `--init-only` / `--maintenance` runs. Matchers: `init` | `maintenance`. Use for credential rotation, env-var provisioning, prerequisite checks BEFORE session starts. dotforge wires `pre-session-check.sh` (v3.7.0+) — validates settings.json JSON, behaviors/index.yaml YAML, all wired hooks present + executable, block-destructive.sh executable. Exit 2 blocks session start.
+- **post-session (v2.1.169+, self-hosted runners only)**: fires after the session ends and BEFORE the workspace is deleted. Use for log persistence, artifact extraction, audit-trail capture in CI/cron environments that wipe workspaces between runs. Not applicable to interactive local sessions (workspace is not deleted).
 
 ## Tool events
 

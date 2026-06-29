@@ -23,6 +23,7 @@ Companion to `permission-model.md`. Covers managed-scope governance, MCP server 
 - `pluginTrustMessage` — custom warning shown on plugin trust prompts
 - `forceLoginOrgUUID` / `forceLoginMethod` — restrict login to org UUIDs or to `claudeai`/`console`. **v2.1.147 fix**: now enforced against third-party-provider (Bedrock/Vertex/Foundry/Mantle) AND API-key sessions; before v2.1.147 those bypassed both restrictions silently. Re-verify enterprise audits done on older Claude Code builds. See `auth.md`
 - `claudeMd` (managed) — embed org-wide CLAUDE.md content directly in `managed-settings.json` as a string instead of deploying a separate file at `/Library/Application Support/ClaudeCode/CLAUDE.md` (or Linux/Windows equivalents). Example: `"claudeMd": "Always run \`make lint\` before committing.\\nNever push directly to main."`. Honored only in managed/policy scope — setting it in user/project/local has no effect. Same precedence as a managed CLAUDE.md file
+- `requiredMinimumVersion` / `requiredMaximumVersion` (v2.1.187+) — version-gating for managed deployments. Block session startup when Claude Code version falls outside the declared range. Use for enterprise rollouts pinned to validated versions, or to block known-bad builds. Format: semver-compatible string (e.g. `"2.1.187"`). Fail-closed: out-of-range startup is rejected with a clear error
 
 ## MCP server config
 

@@ -1262,3 +1262,45 @@ practices:
     status: informational
     projects_applied: 1
     last_checked: null
+
+# /forge update 2026-06-29 — Claude Code v2.1.162..v2.1.195 upstream sync
+  - id: practice-2026-06-17-cc-v2161-bundle
+    error_targeted: null
+    error_type: null
+    activated: 2026-06-29
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: not-applicable
+    projects_applied: 0
+    last_checked: null
+  - id: practice-2026-06-29-cc-v2195-hook-matcher-breaking
+    error_targeted: "hook matcher with hyphens silently substring-matched siblings"
+    error_type: config
+    activated: 2026-06-29
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: monitoring
+    projects_applied: 0
+    last_checked: null
+  - id: practice-2026-06-29-cc-v2181-v2187-sandbox-governance
+    error_targeted: null
+    error_type: security
+    activated: 2026-06-29
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: not-applicable
+    projects_applied: 0
+    last_checked: null
+  - id: practice-2026-06-29-cc-v2163-v2195-feature-bundle
+    error_targeted: null
+    error_type: null
+    activated: 2026-06-29
+    recurrence_checks: 0
+    recurrence_target: 5
+    recurred: false
+    status: not-applicable
+    projects_applied: 0
+    last_checked: null

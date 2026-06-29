@@ -42,6 +42,8 @@ For dotforge specifically: candidates to migrate are `practices/metrics.yml` (co
 - `claude plugin prune` (v2.1.121+) — removes orphaned auto-installed dependencies
 - `plugin uninstall --prune` — cascades dependency cleanup
 - `--plugin-dir` accepts `.zip` archives (v2.1.128+) — alternative distribution path
+- `/plugin list` (v2.1.163+) — list installed plugins from the running session without leaving the prompt. Pairs with `/plugin` (manage) and `claude plugin status` (CLI subcommand)
+- `disableBundledSkills` setting / `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS=1` (v2.1.169+) — skip harness-shipped skills like `/deep-research` so a project-owned implementation takes over without name collision. Use when dotforge ships its own version of a Claude-bundled skill (e.g. project-customized research workflow)
 
 ## Plugin from `.claude/skills/` (v2.1.157+)
 

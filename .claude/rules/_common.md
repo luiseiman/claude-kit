@@ -11,6 +11,7 @@ globs: "**/*.md,**/*.sh,**/*.yml,**/*.json,**/*.tmpl,**/*.py,**/*.ts,**/*.tsx,**
 - No force push to main/master without explicit confirmation
 - Branch naming: feature/, fix/, refactor/, chore/
 - Customize commit/PR trailers via `attribution.commit` and `attribution.pr` in `settings.json` — supersedes the deprecated `includeCoAuthoredBy` boolean
+- `attribution.sessionUrl: false` (v2.1.187+) — omit the claude.ai session link from commit and PR bodies. Privacy/exfil control for projects that publish to public GitHub; the link can leak internal session URLs. Default true. Set false at managed scope for strictest control
 - For self-hosted GitHub/GitLab/Bitbucket, set `prUrlTemplate` to point the footer PR badge at the right host
 - Before opening a PR, confirm CI is green on the base branch (`gh run list --branch main --limit 5`). A preexisting red required check blocks every PR and masks degraded workflows — fix or flag it first, don't stack new work on a blocked pipeline
 

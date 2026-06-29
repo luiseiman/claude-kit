@@ -4,6 +4,49 @@
 >
 > Historial de versiones. Las entradas usan español/inglés mixto según la evolución del proyecto. Los términos técnicos son universales.
 
+## v4.1.0 (2026-06-29)
+
+### Upstream sync — Claude Code v2.1.162 → v2.1.195 (12 domain rule updates)
+
+Captured + incorporated 4 changelog cycles via `/forge watch` + `/forge update`. Verbatim verification against GitHub `anthropics/claude-code/CHANGELOG.md` before incorporation (caught and rejected 6 hallucinated findings from the watch agent — wrong version attributions, fake CLI subcommands).
+
+#### BREAKING (upstream)
+
+- **`domain/hook-architecture.md`** — Hook matchers with hyphens (e.g. `code-reviewer`, `mcp__brave-search`) now exact-match instead of substring-matching (v2.1.195). dotforge agent matchers (`code-reviewer`, `security-auditor`, `session-reviewer`, `test-runner`) are exact-match candidates — verify intent before propagating template change.
+
+#### Security / governance
+
+- **`domain/sandboxing.md`** — `sandbox.credentials` blocks reads on credential files + secret env vars (v2.1.187); `sandbox.allowAppleEvents` opt-in for macOS (v2.1.181). Strong recommend `credentials` for production-tier projects.
+- **`domain/permission-managed-settings.md`** — `requiredMinimumVersion` / `requiredMaximumVersion` managed settings (v2.1.187) for enterprise version gating.
+- **`.claude/rules/_common.md`** — `attribution.sessionUrl` (v2.1.187) to omit claude.ai session links from commits/PRs in public repos.
+
+#### Model / agents
+
+- **`domain/model-ids.md`** — Claude Fable 5 (Mythos-class) added as top tier above Opus (v2.1.170). `/effort` persistence confirmation note (v2.1.162).
+- **`domain/agent-orchestration.md`** — Sub-agent 5-level nesting (v2.1.172), Agent Teams implicit team (v2.1.178), `claude_code.assistant_response` OTel event (v2.1.193, PII opt-in), `claude agents --json` `waitingFor` field (v2.1.162).
+
+#### Hooks / observability
+
+- **`domain/hook-events.md`** — `post-session` lifecycle hook for self-hosted runners (v2.1.169).
+- **`domain/auto-mode.md`** — `autoMode.classifyAllShell` to route every Bash/PowerShell command through the classifier (v2.1.193).
+
+#### CLI / session
+
+- **`domain/cli-flags.md`** — `--safe-mode` / `CLAUDE_CODE_SAFE_MODE` for triage (v2.1.169), `--tools` native-build conditional behavior (v2.1.162), `CLAUDE_CODE_DISABLE_MOUSE_CLICKS` (v2.1.195), `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS` (v2.1.169).
+- **`domain/context-control-patterns.md`** — `/cd` cache-preserving working-dir change (v2.1.169), `/rewind` after `/clear` (v2.1.191).
+- **`domain/auth.md`** — Bedrock now reads AWS region from `~/.aws` config files (v2.1.172).
+- **`domain/plugin-distribution.md`** — `/plugin list` command + `disableBundledSkills` setting (v2.1.163, v2.1.169).
+
+#### Practices pipeline
+
+- 4 captures: `inbox/` → `active/` with `incorporated_in: ["v4.1.0"]`
+- 4 metrics entries: 3 `not-applicable`, 1 `monitoring` (BREAKING hook matcher — track config-error recurrence)
+- Researcher hallucination rate: 6/25 findings invented (24%). Verification step (WebFetch CHANGELOG.md verbatim) caught all. Lesson reinforced: never trust agent-reported version numbers without source quote.
+
+#### Non-breaking for dotforge
+
+All edits are domain-rule content additions — no template, hook, or settings.json changes. Existing projects continue to work; running `/forge sync` propagates the updated domain knowledge into managed projects.
+
 ## v4.0.0 (2026-06-03)
 
 ### Major release — override capture loop, workflow economics rule, audit items 16-17

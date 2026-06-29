@@ -14,6 +14,7 @@ last_verified: 2026-05-27
 - Fork subagents share parent prompt cache (Anthropic caching API) — saves tokens
 - Max 10 concurrent tool executions across all agents (`gW5 = 10`)
 - `shouldAvoidPermissionPrompts: true` for background agents (auto-deny, no UI)
+- **Sub-agent nesting up to 5 levels deep (v2.1.172+)**: sub-agents can now spawn their own sub-agents. Previously single-level only. Token cost compounds geometrically — a 5-level chain with fanout=3 per level = up to 243 leaf agents. Use deep nesting only when each level has a distinct concern (e.g. Lead → 3 perspective leads → 3 specialists each → adversarial verify pass). For flat fan-out prefer `/workflows` which is more visible and budget-trackable
 
 ## Task types
 
@@ -69,6 +70,17 @@ Composition with global hooks: agent hooks **merge** with `.claude/settings.json
 - Combined effect: distributed tracing of agent trees is now complete
 - **v2.1.161 metric label expansion**: `OTEL_RESOURCE_ATTRIBUTES` values are now included as labels on metric datapoints. Slice usage metrics by team, repo, or any custom dimension. Pre-fix only span attributes carried these — metrics were unsliceable.
 - **v2.1.161 tool parameter capture**: `tool_decision` events include `tool_parameters` when `OTEL_LOG_TOOL_DETAILS=1`. Opt-in: parameter values may contain secrets, so disabled by default. Use for forensic replay of denied tool calls.
+- **v2.1.193 `claude_code.assistant_response` log event**: new OTel log event containing the assistant's response text. Enables auditing what was emitted to the user (compliance, redaction QA, forensic review). **PII risk**: response text may include user data, code with secrets, or internal IDs that leaked from tool output — opt-in only via OTel logger config, never default-on for sessions handling regulated data unless the OTel sink is itself compliant.
+
+## Agent Teams: implicit team (v2.1.178+)
+
+With `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, every session now has one implicit team — no need to declare a Lead + teammates structure manually for ad-hoc fan-out. Lowers the activation cost for Agent Teams (previously required explicit team scaffolding). Composes with sub-agent 5-level nesting: a teammate can recurse into its own sub-agents up to 5 levels deep.
+
+dotforge implication: `.claude/rules/agents.md` Agent Teams criteria still apply (≥3 components, ≤4 teammates, worktree isolation). The implicit team just removes ceremony — the design constraints don't relax.
+
+## `claude agents --json waitingFor` (v2.1.162+)
+
+`claude agents --json` now includes a `waitingFor` field per session showing the current blocker — values like `permission_prompt`, `deferred_tool`, `user_input`, `network`, `null` (running). Use for status-bar widgets, tmux session pickers, or auto-attach scripts that wake the user only when a session needs them. Combines with the `done/total` agent count (v2.1.161+) to give a complete picture without attaching.
 
 ## Single-file grep satisfies read-before-edit (v2.1.160+)
 

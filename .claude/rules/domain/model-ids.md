@@ -9,11 +9,14 @@ last_verified: 2026-06-01
 
 | Tier | Model ID | Context | Max output |
 |------|----------|---------|------------|
+| fable (Mythos-class, v2.1.170+) | `claude-fable-5` | TBD | TBD |
 | opus | `claude-opus-4-8` | 1M | 128K tokens |
 | sonnet | `claude-sonnet-4-6` | 1M | 64K tokens |
 | haiku | `claude-haiku-4-5-20251001` | 200K | 8K tokens |
 
 Opus 4.7 (`claude-opus-4-7`) still resolvable as legacy pin — choose when reproducing benchmarks predating v2.1.154 (2026-05-27).
+
+**Fable 5 (v2.1.170+)** is a Mythos-class model with capabilities exceeding any prior generally-available Claude. Treat as the top tier for the highest-stakes work (architecture across irreversible blast radius, security audits on production-tier projects, complex novel problems). Cost/context specifics still consolidating — verify via `/model` picker before pinning to a session. Do NOT default agents to fable yet without explicit cost justification.
 
 Default agents: opus → architect, security-auditor. sonnet → implementer, code-reviewer, session-reviewer. haiku → researcher, test-runner.
 
@@ -26,6 +29,10 @@ Five core tiers + 1 mode tier: `low` < `medium` < `high` < `xhigh` < `max`, plus
 - Consider `xhigh` (not `max`) for `security-auditor`/`architect` on complex tasks — deeper reasoning without the cost jump of max
 - Benchmark baselines computed before 2026-04-07 are no longer comparable
 - For deterministic transformations (rename, reformat) explicit `effort: low` is recommended
+
+## `/effort` persistence (v2.1.162+)
+
+After picking a level via `/effort`, the picker confirms "this will be the default for new sessions" — the choice persists across new sessions (not just the current one). Pre-v2.1.162 the persistence behavior was silent and confused users into re-setting effort each session. The picker is now explicit about the scope. Use `--effort <level>` per-invocation when you need a one-off override without mutating the persistent default.
 
 ## `/model` is per-session by default (v2.1.144+)
 

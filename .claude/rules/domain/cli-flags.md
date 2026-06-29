@@ -24,8 +24,9 @@ Reference for non-paralellism CLI surface. For session-parallelism flags see `pa
 - `--input-format text|stream-json` and `--include-partial-messages`: SDK streaming knobs (require `--output-format stream-json`)
 - `--strict-mcp-config`: only honor MCP servers from `--mcp-config`
 - `--system-prompt` / `--system-prompt-file` / `--append-system-prompt` / `--append-system-prompt-file`: prompt customization (replace vs append)
-- `--tools "Bash,Edit,Read"` (or `""`/`"default"`) restricts built-in tools; `--allowedTools` and `--disallowedTools` apply pattern-matched permission rules
+- `--tools "Bash,Edit,Read"` (or `""`/`"default"`) restricts built-in tools; `--allowedTools` and `--disallowedTools` apply pattern-matched permission rules. **Native build conditional (v2.1.162+)**: on native macOS/Linux builds the standalone `Grep` / `Glob` tools are replaced by embedded `bfs`/`ugrep` via Bash. Listing `--tools "Grep,Glob"` explicitly activates the native searchers (otherwise they're routed through Bash). On Windows / npm builds the flag behaves as before
 - `--debug-file <path>` / `--debug "api,hooks"`: targeted debug output
+- `--safe-mode` / `CLAUDE_CODE_SAFE_MODE=1` (v2.1.169+): start Claude Code with ALL customizations disabled — no hooks, skills, plugins, custom agents, custom MCP. Auth + built-in permissions + built-in tools only. Use for triaging "is dotforge breaking something?" vs "is Claude Code itself broken?". Equivalent to `--bare` but with explicit semantics and CI-friendly env var. If a project misbehaves only outside `--safe-mode`, the bug is in user/project config not core
 
 ## Other interactive flags
 
@@ -73,3 +74,6 @@ Reference for non-paralellism CLI surface. For session-parallelism flags see `pa
 - `$CLAUDE_EFFORT` (v2.1.133+): active effort level exported to Bash tool subprocesses; hook inputs see the same value under `effort.level`. See `hook-events.md`
 - `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE=1` (v2.1.142+): pin fast mode (`/fast`) to Opus 4.6. Default flipped to Opus 4.7 in v2.1.142 — use only if you need pre-flip output reproducibility (benchmarks, regression tests)
 - `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP=<n>` (v2.1.143+): override the 8-consecutive-block cap on Stop hooks. See `hook-events.md` Stop hook contract
+- `CLAUDE_CODE_SAFE_MODE=1` (v2.1.169+): equivalent to `--safe-mode` flag — disables all customizations. CI-friendly for "is the failure my config or upstream?" triage
+- `CLAUDE_CODE_DISABLE_MOUSE_CLICKS=1` (v2.1.195+): disable mouse click/drag/hover in fullscreen mode while keeping wheel scroll. Use when terminal multiplexers (tmux, zellij) capture clicks and break text selection
+- `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS=1` (v2.1.169+): companion to `disableBundledSkills` setting — skip the harness-shipped skills (`/deep-research`, etc.) so project-owned versions take over without name collision

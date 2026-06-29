@@ -60,6 +60,12 @@ Use `hard_deny` for patterns that must never auto-approve regardless of how the 
 }
 ```
 
+## Classify every shell command (`classifyAllShell`, v2.1.193+)
+
+`autoMode.classifyAllShell: true` routes ALL Bash and PowerShell commands through the classifier instead of just unknown/unmatched ones. Pre-v2.1.193, an `allow` match short-circuited the classifier; with this flag, every shell call is evaluated for safety even if `allow` would otherwise grant it. Trades latency (extra classifier hop per command) for defense-in-depth (catches `allow` rules that turned out broader than intended).
+
+Use for production-tier projects where the cost of one wrong auto-approval exceeds the cost of ~100ms per Bash call. Not recommended for high-throughput dev tooling (test loops, build watchers).
+
 ## Permission stripping in auto mode
 
 Broad allow rules are SILENTLY STRIPPED when auto mode activates:
